@@ -9,20 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResolutionStrategies(t *testing.T) {
+func TestStrictResolution(t *testing.T) {
 	tests := []struct {
 		name               string
 		requestedVersion   string
-		strategy           toolprovider.ResolutionStrategy
 		installedVersions  []string
 		releasedVersions   []string
 		expectedResolution asdf.VersionResolution
 		expectedErr        error
 	}{
 		{
-			name:             "Exact match with installed version, strict strategy",
+			name:             "Exact match with installed version",
 			requestedVersion: "1.0.0",
-			strategy:         toolprovider.ResolutionStrategyStrict,
 			installedVersions: []string{
 				"1.0.0",
 				"1.0.1",
@@ -41,9 +39,8 @@ func TestResolutionStrategies(t *testing.T) {
 			},
 		},
 		{
-			name:             "Exact version but not installed, strict strategy",
+			name:             "Exact version but not installed",
 			requestedVersion: "1.0.0",
-			strategy:         toolprovider.ResolutionStrategyStrict,
 			installedVersions: []string{
 				"1.0.1",
 				"1.1.0",
@@ -61,9 +58,62 @@ func TestResolutionStrategies(t *testing.T) {
 			},
 		},
 		{
-			name:             "Exact version but not installed, latest installed strategy",
+			name:             "Nonexistent version",
+			requestedVersion: "2.0.0",
+			installedVersions: []string{
+				"1.0.1",
+				"1.1.0",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"1.0.1",
+				"1.1.0",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
+		{
+			name:             "Old Golang versioning scheme",
+			requestedVersion: "1.19",
+			installedVersions: []string{
+				"1.18",
+				"1.18.3",
+				"1.20",
+			},
+			releasedVersions: []string{
+				"1.18",
+				"1.18.1",
+				"1.18.2",
+				"1.18.3",
+				"1.19",
+				"1.19.1",
+				"1.19.5",
+				"1.20",
+				"1.20.1",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "1.19",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("1.19")),
+				IsInstalled:   false,
+			},
+		},
+	}
+
+	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyStrict)
+}
+
+func TestLatestInstalledResolution(t *testing.T) {
+	tests := []struct {
+		name               string
+		requestedVersion   string
+		installedVersions  []string
+		releasedVersions   []string
+		expectedResolution asdf.VersionResolution
+		expectedErr        error
+	}{
+		{
+			name:             "Exact version but not installed",
 			requestedVersion: "1.0.0",
-			strategy:         toolprovider.ResolutionStrategyLatestInstalled,
 			installedVersions: []string{
 				"1.0.1",
 				"1.1.0",
@@ -81,9 +131,8 @@ func TestResolutionStrategies(t *testing.T) {
 			},
 		},
 		{
-			name:             "Partial match with installed version, latest installed strategy",
+			name:             "Partial match with installed version",
 			requestedVersion: "20",
-			strategy:         toolprovider.ResolutionStrategyLatestInstalled,
 			installedVersions: []string{
 				"18.6.3",
 				"20.0.0",
@@ -108,9 +157,109 @@ func TestResolutionStrategies(t *testing.T) {
 			},
 		},
 		{
-			name:             "Partial match with installed version, latest released strategy",
+			name:             "Possibly-semver versions and partial match should correctly report installed state",
 			requestedVersion: "20",
-			strategy:         toolprovider.ResolutionStrategyLatestReleased,
+			installedVersions: []string{
+				"20.0.0",
+				"20.1", // should be padded to 20.1.0
+				"21.0.0",
+			},
+			releasedVersions: []string{
+				"20.0.0",
+				"20.1", // should be padded to 20.1.0
+				"21.0.0",
+				"22.0.0",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "20.1.0",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("20.1")),
+				IsInstalled:   true,
+			},
+		},
+		{
+			name:             "Old Golang versioning scheme",
+			requestedVersion: "1.19",
+			installedVersions: []string{
+				"1.18",
+				"1.18.3",
+				"1.19.5",
+				"1.20",
+			},
+			releasedVersions: []string{
+				"1.18",
+				"1.18.1",
+				"1.18.2",
+				"1.18.3",
+				"1.19",
+				"1.19.1",
+				"1.19.5",
+				"1.20",
+				"1.20.1",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "1.19.5",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("1.19.5")),
+				IsInstalled:   true,
+			},
+		},
+		{
+			name:             "No partial match for installed version, fallback to released version match",
+			requestedVersion: "20.3",
+			installedVersions: []string{
+				"18.6.3",
+				"20.0.0",
+				"20.1.0",
+				"20.2.0",
+				"21.0.0",
+			},
+			releasedVersions: []string{
+				"18.6.3",
+				"20.0.0",
+				"20.1.0",
+				"20.2.0",
+				"20.3.0",
+				"20.5.0",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "20.3.0",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("20.3.0")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name:             "Nonexistent version",
+			requestedVersion: "2.0.0",
+			installedVersions: []string{
+				"1.0.1",
+				"1.1.0",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"1.0.1",
+				"1.1.0",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
+	}
+
+	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyLatestInstalled)
+}
+
+func TestLatestReleasedResolution(t *testing.T) {
+	tests := []struct {
+		name               string
+		requestedVersion   string
+		installedVersions  []string
+		releasedVersions   []string
+		expectedResolution asdf.VersionResolution
+		expectedErr        error
+	}{
+		{
+			name:             "Partial match with installed version",
+			requestedVersion: "20",
 			installedVersions: []string{
 				"18.6.3",
 				"20.0.0",
@@ -135,41 +284,88 @@ func TestResolutionStrategies(t *testing.T) {
 			},
 		},
 		{
-			name:             "Possibly-semver versions and partial match should correctly report installed state",
+			name:             "Partial match with released version only",
 			requestedVersion: "20",
-			strategy:         toolprovider.ResolutionStrategyLatestInstalled,
 			installedVersions: []string{
-				"20.0.0",
-				"20.1", // should be padded to 20.1.0
+				"18.6.3",
 				"21.0.0",
 			},
 			releasedVersions: []string{
+				"18.6.3",
 				"20.0.0",
-				"20.1", // should be padded to 20.1.0
+				"20.1.0",
+				"20.2.0",
+				"20.5.0",
 				"21.0.0",
 				"22.0.0",
 			},
 			expectedResolution: asdf.VersionResolution{
-				VersionString: "20.1.0",
+				VersionString: "20.5.0",
 				IsSemVer:      true,
-				SemVer:        version.Must(version.NewVersion("20.1")),
+				SemVer:        version.Must(version.NewVersion("20.5.0")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name:             "Exact version matches installed version",
+			requestedVersion: "18.6.3",
+			installedVersions: []string{
+				"18.6.3",
+				"21.0.0",
+			},
+			releasedVersions: []string{
+				"18.6.3",
+				"20.0.0",
+				"20.1.0",
+				"20.2.0",
+				"20.5.0",
+				"21.0.0",
+				"22.0.0",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "18.6.3",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("18.6.3")),
 				IsInstalled:   true,
 			},
 		},
-		// TODO: non-semver versions (JDK, etc)
-		// TODO: requesting a semver-compatible version when installed / released versions are non-semver
-		// TODO: correct resolution among versions that only differ in pre-release tags and metadata
-		// TODO: Go 1.20
-		// TODO: matching a lower version (inverse of pessimistic operator)
-		// TODO: ErrRequestedVersionNotSemVer
+		{
+			name:             "Nonexistent version",
+			requestedVersion: "2.0.0",
+			installedVersions: []string{
+				"1.0.1",
+				"1.1.0",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"1.0.1",
+				"1.1.0",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
 	}
 
+	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyLatestReleased)
+}
+
+func runVersionResolutionTests(
+	t *testing.T,
+	tests []struct {
+		name               string
+		requestedVersion   string
+		installedVersions  []string
+		releasedVersions   []string
+		expectedResolution asdf.VersionResolution
+		expectedErr        error
+	},
+	strategy toolprovider.ResolutionStrategy,
+) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			declaration := toolprovider.ToolRequest{
 				ToolName:           "test-tool",
 				UnparsedVersion:    tt.requestedVersion,
-				ResolutionStrategy: tt.strategy,
+				ResolutionStrategy: strategy,
 			}
 
 			resolvedV, err := asdf.ResolveVersion(
@@ -187,3 +383,10 @@ func TestResolutionStrategies(t *testing.T) {
 		})
 	}
 }
+
+// TODO: non-semver versions (JDK, etc)
+// TODO: requesting a semver-compatible version when installed / released versions are non-semver
+// TODO: correct resolution among versions that only differ in pre-release tags and metadata
+// TODO: handling of invalid version strings
+// - installed+released versions are semver, but requested version is not
+// - installed+released versions are not semver, but requested version is

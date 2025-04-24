@@ -6,13 +6,17 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bitrise-io/bitrise/v2/log"
 	"github.com/bitrise-io/toolprovider"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/exp/slices"
 )
 
 var ErrStrictVersionNotInstalled = errors.New("requested version is not installed and resolution strategy is strict")
+
+// TODO: better error when update is implemented
 var ErrNoMatchingVersion = errors.New("no matching version found")
+
 var ErrRequestedVersionNotSemVer = errors.New("requested version is not semver compatible while available tool versions follow semver")
 
 type ProviderOptions struct {
@@ -43,14 +47,16 @@ func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) error {
 	return nil
 }
 
-// TODO: version lists must be strings (possibly not semver)
 func ResolveVersion(
 	request toolprovider.ToolRequest,
 	releasedVersions []string,
 	installedVersions []string,
 ) (VersionResolution, error) {
-
+	// Short-circuit for exact version match among installed versions
 	if slices.Contains(installedVersions, strings.TrimSpace(request.UnparsedVersion)) {
+		if request.ResolutionStrategy != toolprovider.ResolutionStrategyStrict {
+			log.Warn("Request matches an installed version, but resolution strategy is not set to strict. You might want to use a partial version string as the requested version.")
+		}
 		requestedSemVer, err := version.NewVersion(request.UnparsedVersion)
 		return VersionResolution{
 			VersionString: request.UnparsedVersion,
@@ -117,7 +123,7 @@ func ResolveVersion(
 				}
 			}
 
-			// If no installed version matches, we check the released versions (despite the strategy being "latest installed").
+			// If there is no match among installed versions, we check the released versions (despite the strategy being "latest installed").
 			var sortedReleasedVersions version.Collection
 			for _, v := range releasedVersions {
 				releasedV, err := version.NewVersion(v)
@@ -142,7 +148,7 @@ func ResolveVersion(
 				}
 			}
 
-			return VersionResolution{}, fmt.Errorf("TODO")
+			return VersionResolution{}, ErrNoMatchingVersion
 
 		} else {
 			// TODO: heuristic for natural order of non-semver strings
@@ -177,15 +183,54 @@ func ResolveVersion(
 			return VersionResolution{}, ErrNoMatchingVersion
 		}
 	} else if request.ResolutionStrategy == toolprovider.ResolutionStrategyLatestReleased {
-		return VersionResolution{}, fmt.Errorf("TODO")
+		if isToolSemVer {
+			var sortedReleasedVersions version.Collection
+			for _, v := range releasedVersions {
+				releasedV, err := version.NewVersion(v)
+				if err != nil {
+					return VersionResolution{}, fmt.Errorf("parse %s %s: %w", request.ToolName, v, err)
+				}
+				sortedReleasedVersions = append(sortedReleasedVersions, releasedV)
+			}
+			sort.Sort(sort.Reverse(sortedReleasedVersions))
+			for _, v := range sortedReleasedVersions {
+				if strings.HasPrefix(v.String(), request.UnparsedVersion) {
+					// Since versions are semver-compatible and `version.Collection`
+					// guarantees correct ordering (even for pre-releases),
+					// we can stop searching if the version prefix-matches the requested version.
+					return VersionResolution{
+						VersionString: v.String(),
+						IsSemVer:      true,
+						SemVer:        v,
+						IsInstalled:   false,
+					}, nil
+				}
+			}
+			return VersionResolution{}, ErrNoMatchingVersion
+		} else {
+			// TODO: heuristic for natural order of non-semver strings
+			sortedReleasedVersions := slices.Clone(releasedVersions)
+			slices.Sort(sortedReleasedVersions)
+			slices.Reverse(sortedReleasedVersions)
+			for _, v := range sortedReleasedVersions {
+				if strings.HasPrefix(v, request.UnparsedVersion) {
+					return VersionResolution{
+						VersionString: v,
+						IsSemVer:      false,
+						SemVer:        nil,
+						IsInstalled:   false,
+					}, nil
+				}
+			}
+			return VersionResolution{}, ErrNoMatchingVersion
+		}
 	}
-
 	return VersionResolution{}, fmt.Errorf("TODO")
 }
 
-// isToolSemVer checks if the requested tool is semver compatible and returns a boolean
+// isToolSemVer guesses if a tool follows semantic versioning.
+// It returns true if all released versions are semver compatible,
 // and the semver-violating version string if it is not semver compatible.
-// Note: it's possible that the requested version looks semver compatible but one released version is not.
 // TODO: can we guarantee that releasedVersions is always up to date? Or that it's good enough?
 func isToolSemVer(releasedVersions []string) (bool, string) {
 	for _, v := range releasedVersions {
