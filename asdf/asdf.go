@@ -42,8 +42,7 @@ func (a *AsdfToolProvider) Bootstrap() error {
 }
 
 func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) error {
-	// TODO: figure out how to persist selection (local tool-version file might make git dirty)
-
+	// TODO
 	return nil
 }
 
@@ -84,11 +83,6 @@ func ResolveVersion(
 
 	if request.ResolutionStrategy == toolprovider.ResolutionStrategyLatestInstalled {
 		if isToolSemVer {
-			requestedSemVer, err := version.NewVersion(request.UnparsedVersion)
-			if err != nil {
-				return VersionResolution{}, fmt.Errorf("parse %s %s: %w", request.ToolName, request.UnparsedVersion, ErrRequestedVersionNotSemVer)
-			}
-
 			// Installed versions are checked first because strategy is "latest installed"
 			var sortedInstalledVersions version.Collection
 			for _, v := range installedVersions {
@@ -101,15 +95,6 @@ func ResolveVersion(
 			sort.Sort(sort.Reverse(sortedInstalledVersions))
 
 			for _, v := range sortedInstalledVersions {
-				if v.Equal(requestedSemVer) {
-					return VersionResolution{
-						VersionString: v.String(),
-						IsSemVer:      true,
-						SemVer:        v,
-						IsInstalled:   true,
-					}, nil
-				}
-
 				if strings.HasPrefix(v.String(), request.UnparsedVersion) {
 					// Since versions are semver-compatible and `version.Collection`
 					// guarantees correct ordering (even for pre-releases),
@@ -151,7 +136,6 @@ func ResolveVersion(
 			return VersionResolution{}, ErrNoMatchingVersion
 
 		} else {
-			// TODO: heuristic for natural order of non-semver strings
 			sortedInstalledVersions := slices.Clone(installedVersions)
 			slices.Sort(sortedInstalledVersions)
 			slices.Reverse(sortedInstalledVersions)
@@ -198,39 +182,49 @@ func ResolveVersion(
 					// Since versions are semver-compatible and `version.Collection`
 					// guarantees correct ordering (even for pre-releases),
 					// we can stop searching if the version prefix-matches the requested version.
+
+					// Even though we search the released versions primarily,
+					// it's still possible that the latest released version is also installed.
+					isInstalled := slices.Contains(installedVersions, v.String())
+
 					return VersionResolution{
 						VersionString: v.String(),
 						IsSemVer:      true,
 						SemVer:        v,
-						IsInstalled:   false,
+						IsInstalled:   isInstalled,
 					}, nil
 				}
 			}
 			return VersionResolution{}, ErrNoMatchingVersion
 		} else {
-			// TODO: heuristic for natural order of non-semver strings
 			sortedReleasedVersions := slices.Clone(releasedVersions)
 			slices.Sort(sortedReleasedVersions)
 			slices.Reverse(sortedReleasedVersions)
 			for _, v := range sortedReleasedVersions {
 				if strings.HasPrefix(v, request.UnparsedVersion) {
+					// Even though we search the released versions primarily,
+					// it's still possible that the latest released version is also installed.
+					isInstalled := slices.Contains(installedVersions, v)
+
 					return VersionResolution{
 						VersionString: v,
 						IsSemVer:      false,
 						SemVer:        nil,
-						IsInstalled:   false,
+						IsInstalled:   isInstalled,
 					}, nil
 				}
 			}
 			return VersionResolution{}, ErrNoMatchingVersion
 		}
 	}
+
+	// TODO
 	return VersionResolution{}, fmt.Errorf("TODO")
 }
 
 // isToolSemVer guesses if a tool follows semantic versioning.
 // It returns true if all released versions are semver compatible,
-// and the semver-violating version string if it is not semver compatible.
+// or the semver-violating version string if it is not semver compatible.
 // TODO: can we guarantee that releasedVersions is always up to date? Or that it's good enough?
 func isToolSemVer(releasedVersions []string) (bool, string) {
 	for _, v := range releasedVersions {
