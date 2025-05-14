@@ -162,6 +162,24 @@ func TestStrictResolution(t *testing.T) {
 			},
 			expectedErr: asdf.ErrNoMatchingVersion,
 		},
+		{
+			name:             "Non-semver tool, requested version is semver",
+			requestedVersion: "21.0.0",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
 	}
 
 	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyStrict)
@@ -460,6 +478,24 @@ func TestLatestInstalledResolution(t *testing.T) {
 			},
 			expectedErr: asdf.ErrNoMatchingVersion,
 		},
+		{
+			name:             "Non-semver tool, requested version is semver",
+			requestedVersion: "21.0.0",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
 	}
 
 	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyLatestInstalled)
@@ -727,6 +763,24 @@ func TestLatestReleasedResolution(t *testing.T) {
 			},
 			expectedErr: asdf.ErrNoMatchingVersion,
 		},
+		{
+			name:             "Non-semver tool, requested version is semver",
+			requestedVersion: "21.0.0",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedErr: asdf.ErrNoMatchingVersion,
+		},
 	}
 
 	runVersionResolutionTests(t, tests, toolprovider.ResolutionStrategyLatestReleased)
@@ -768,8 +822,4 @@ func runVersionResolutionTests(
 	}
 }
 
-// TODO: requesting a semver-compatible version when installed / released versions are non-semver
 // TODO: correct resolution among versions that only differ in pre-release tags and metadata
-// TODO: handling of invalid version strings
-// - installed+released versions are semver, but requested version is not
-// - installed+released versions are not semver, but requested version is
