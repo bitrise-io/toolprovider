@@ -17,6 +17,11 @@ type ToolRequest struct {
 	// TODO: InstallEnv env vars
 }
 
+type ToolInstallResult struct {
+	IsAlreadyInstalled bool
+	
+}
+
 type EnvironmentActivation struct {
 	ContributedEnvVars map[string]string
 	ContributedPaths   []string
@@ -26,7 +31,7 @@ type EnvironmentActivation struct {
 type ToolProvider interface {
 	Bootstrap() error
 
-	InstallTool(tool ToolRequest) error
+	InstallTool(tool ToolRequest) (ToolInstallResult, error)
 
 	ActivateEnv() (EnvironmentActivation, error)
 

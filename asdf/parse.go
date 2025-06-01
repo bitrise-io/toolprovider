@@ -10,7 +10,7 @@ import (
 
 func installedAsdfVersion() (*version.Version, error) {
 	// We spawn a login shell because "classic" asdf is implemented in Bash and sourced in the shell config.
-	cmd := exec.Command("bash -lc", "asdf", "version")
+	cmd := exec.Command("bash", "-lc", "asdf", "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("exec asdf version: %w, %s", err, output)
@@ -31,6 +31,19 @@ func listInstalled(toolName string) ([]string, error) {
 	
 	installedVersions := parseAsdfListOutput(output)
 	return installedVersions, nil
+}
+
+// TODO: check if tool-plugin is installed
+func listReleased(toolName string) ([]string, error) {
+	// We spawn a login shell because "classic" asdf is implemented in Bash and sourced in the shell config.
+	cmd := exec.Command("bash", "-lc", fmt.Sprintf("asdf list-all %s", toolName))
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("exec asdf list-all %s: %w, %s", toolName, err, output)
+	}
+
+	releasedVersions := parseAsdfListOutput(output)
+	return releasedVersions, nil
 }
 
 func parseAsdfListOutput(output []byte) []string {
