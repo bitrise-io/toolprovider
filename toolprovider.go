@@ -18,8 +18,9 @@ type ToolRequest struct {
 }
 
 type ToolInstallResult struct {
+	ToolName           string
 	IsAlreadyInstalled bool
-	
+	ConcreteVersion    string
 }
 
 type EnvironmentActivation struct {
@@ -33,7 +34,7 @@ type ToolProvider interface {
 
 	InstallTool(tool ToolRequest) (ToolInstallResult, error)
 
-	ActivateEnv() (EnvironmentActivation, error)
+	ActivateEnv(result ToolInstallResult) (EnvironmentActivation, error)
 
 	// TODO: IsInstalledNative(tool ToolRequest) (bool, error)
 }

@@ -11,6 +11,7 @@ type ProviderOptions struct {
 }
 
 type AsdfToolProvider struct {
+	ExecEnv ExecEnv
 }
 
 func (a *AsdfToolProvider) Bootstrap() error {
@@ -22,12 +23,12 @@ func (a *AsdfToolProvider) Bootstrap() error {
 }
 
 func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) (toolprovider.ToolInstallResult, error) {
-	installedVersions, err := listInstalled(tool.ToolName)
+	installedVersions, err := a.listInstalled(tool.ToolName)
 	if err != nil {
 		return toolprovider.ToolInstallResult{}, fmt.Errorf("list installed versions: %w", err)
 	}
 
-	releasedVersions, err := listReleased(tool.ToolName)
+	releasedVersions, err := a.listReleased(tool.ToolName)
 	if err != nil {
 		return toolprovider.ToolInstallResult{}, fmt.Errorf("list released versions: %w", err)
 	}
@@ -39,7 +40,9 @@ func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) (toolprovi
 
 	if resolution.IsInstalled {
 		return toolprovider.ToolInstallResult{
+			ToolName:           tool.ToolName,
 			IsAlreadyInstalled: true,
+			ConcreteVersion:    resolution.VersionString,
 		}, nil
 	} else {
 		err = installToolVersion(tool.ToolName, resolution.VersionString)
@@ -50,7 +53,9 @@ func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) (toolprovi
 		// TODO: reshim workarounds
 
 		return toolprovider.ToolInstallResult{
+			ToolName:           tool.ToolName,
 			IsAlreadyInstalled: false,
+			ConcreteVersion:    resolution.VersionString,
 		}, nil
 	}
 }

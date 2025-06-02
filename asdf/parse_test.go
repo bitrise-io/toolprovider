@@ -9,32 +9,32 @@ import (
 func TestParseAsdfListOutput(t *testing.T) {
 	tests := []struct {
 		name    string
-		output  []byte
+		output  string
 		want    []string
 	}{
 		{
 			name:    "basic",
-			output:  []byte("  1.21.0\n  1.21.11\n  1.21\n  1.22.0\n *1.22\n  1.23.5\n  1.23.7\n  1.23\n  1.24.0\n  1"),
+			output:  "  1.21.0\n  1.21.11\n  1.21\n  1.22.0\n *1.22\n  1.23.5\n  1.23.7\n  1.23\n  1.24.0\n  1",
 			want:    []string{"1.21.0", "1.21.11", "1.21", "1.22.0", "1.22", "1.23.5", "1.23.7", "1.23", "1.24.0", "1"},
 		},
 		{
 			name:    "empty",
-			output:  []byte(""),
+			output:  "",
 			want:    []string{},
 		},
 		{
 			name:    "single version",
-			output:  []byte("1.0.0"),
+			output:  "1.0.0",
 			want:    []string{"1.0.0"},
 		},
 		{
 			name:    "single active version",
-			output:  []byte("*1.0.0"),
+			output:  "*1.0.0",
 			want:    []string{"1.0.0"},
 		},
 		{
 			name:    "whitespace only",
-			output:  []byte("   "),
+			output:  "   ",
 			want:    []string{},
 		},
 	}

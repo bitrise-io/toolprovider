@@ -2,51 +2,63 @@ package asdf
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/hashicorp/go-version"
 )
 
-func installedAsdfVersion() (*version.Version, error) {
-	// We spawn a login shell because "classic" asdf is implemented in Bash and sourced in the shell config.
-	cmd := exec.Command("bash", "-lc", "asdf", "version")
-	output, err := cmd.Output()
+func (a *AsdfToolProvider) asdfVersion() (*version.Version, error) {
+	output, err := a.ExecEnv.runAsdf("--version")
 	if err != nil {
-		return nil, fmt.Errorf("exec asdf version: %w, %s", err, output)
+		return nil, err
 	}
-	
+
 	versionStr := strings.TrimSpace(string(output))
-	return version.NewVersion(versionStr)
+	ver, err := version.NewVersion(versionStr)
+	if err != nil {
+		return nil, fmt.Errorf("parse asdf version: %w", err)
+	}
+	return ver, nil
 }
 
 // TODO: check if tool-plugin is installed
-func listInstalled(toolName string) ([]string, error) {
-	// We spawn a login shell because "classic" asdf is implemented in Bash and sourced in the shell config.
-	cmd := exec.Command("bash", "-lc", fmt.Sprintf("asdf list %s", toolName))
-	output, err := cmd.Output()
+func (a *AsdfToolProvider) listInstalled(toolName string) ([]string, error) {
+	output, err := a.ExecEnv.runAsdf("list", toolName)
 	if err != nil {
-		return nil, fmt.Errorf("exec asdf list %s: %w, %s", toolName, err, output)
+		// asdf 0.16.0+ returns exit code 1 if no versions are installed
+		if strings.Contains(err.Error(), "No compatible versions installed") {
+			return []string{}, nil
+		}
+		return nil, err
 	}
-	
+
 	installedVersions := parseAsdfListOutput(output)
 	return installedVersions, nil
 }
 
 // TODO: check if tool-plugin is installed
-func listReleased(toolName string) ([]string, error) {
-	// We spawn a login shell because "classic" asdf is implemented in Bash and sourced in the shell config.
-	cmd := exec.Command("bash", "-lc", fmt.Sprintf("asdf list-all %s", toolName))
-	output, err := cmd.Output()
+func (a *AsdfToolProvider) listReleased(toolName string) ([]string, error) {
+	asdfVer, err := a.asdfVersion()
 	if err != nil {
-		return nil, fmt.Errorf("exec asdf list-all %s: %w, %s", toolName, err, output)
+		return nil, err
+	}
+	var subcommand string
+	if asdfVer.GreaterThanOrEqual(version.Must(version.NewVersion("0.16.0"))) {
+		subcommand = "list all"
+	} else {
+		subcommand = "list-all"
+	}
+
+	output, err := a.ExecEnv.runAsdf(subcommand, toolName)
+	if err != nil {
+		return nil, err
 	}
 
 	releasedVersions := parseAsdfListOutput(output)
 	return releasedVersions, nil
 }
 
-func parseAsdfListOutput(output []byte) []string {
+func parseAsdfListOutput(output string) []string {
 	// There is no machine-readable output, we are parsing this:
 	//   1.21.0
 	//   1.21.11
