@@ -1,9 +1,10 @@
-package toolprovider_test
+package config_test
 
 import (
 	"testing"
 
-	"github.com/bitrise-io/toolprovider"
+	"github.com/bitrise-io/toolprovider/provider"
+	"github.com/bitrise-io/toolprovider/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,12 +12,12 @@ func TestParseBitriseYml(t *testing.T) {
 	tests := []struct {
 		name     string
 		ymlPath  string
-		expected map[string]toolprovider.ToolRequest
+		expected map[string]provider.ToolRequest
 	}{
 		{
 			name:    "Valid YML",
 			ymlPath: "testdata/valid.bitrise.yml",
-			expected: map[string]toolprovider.ToolRequest{
+			expected: map[string]provider.ToolRequest{
 				"golang": {
 					ToolName:        "golang",
 					UnparsedVersion: "1.16.3",
@@ -24,7 +25,7 @@ func TestParseBitriseYml(t *testing.T) {
 				"nodejs": {
 					ToolName:           "nodejs",
 					UnparsedVersion:    "20",
-					ResolutionStrategy: toolprovider.ResolutionStrategyLatestInstalled,
+					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
 				},
 			},
 		},
@@ -32,11 +33,11 @@ func TestParseBitriseYml(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bitriseYml, err := toolprovider.ParseBitriseYml(tt.ymlPath)
+			bitriseYml, err := config.ParseBitriseYml(tt.ymlPath)
 			assert.NoError(t, err)
 			assert.NotNil(t, bitriseYml)
 
-			toolDeclarations, err := toolprovider.ParseToolDeclarations(bitriseYml)
+			toolDeclarations, err := config.ParseToolDeclarations(bitriseYml)
 			assert.NoError(t, err)
 
 			if len(toolDeclarations) != len(tt.expected) {

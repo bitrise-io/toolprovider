@@ -3,7 +3,7 @@ package asdf
 import (
 	"fmt"
 
-	"github.com/bitrise-io/toolprovider"
+	"github.com/bitrise-io/toolprovider/provider"
 )
 
 type ProviderOptions struct {
@@ -22,37 +22,35 @@ func (a *AsdfToolProvider) Bootstrap() error {
 	return nil
 }
 
-func (a *AsdfToolProvider) InstallTool(tool toolprovider.ToolRequest) (toolprovider.ToolInstallResult, error) {
+func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.ToolInstallResult, error) {
 	installedVersions, err := a.listInstalled(tool.ToolName)
 	if err != nil {
-		return toolprovider.ToolInstallResult{}, fmt.Errorf("list installed versions: %w", err)
+		return provider.ToolInstallResult{}, fmt.Errorf("list installed versions: %w", err)
 	}
 
 	releasedVersions, err := a.listReleased(tool.ToolName)
 	if err != nil {
-		return toolprovider.ToolInstallResult{}, fmt.Errorf("list released versions: %w", err)
+		return provider.ToolInstallResult{}, fmt.Errorf("list released versions: %w", err)
 	}
 
 	resolution, err := ResolveVersion(tool, releasedVersions, installedVersions)
 	if err != nil {
-		return toolprovider.ToolInstallResult{}, fmt.Errorf("resolve version: %w", err)
+		return provider.ToolInstallResult{}, fmt.Errorf("resolve version: %w", err)
 	}
 
 	if resolution.IsInstalled {
-		return toolprovider.ToolInstallResult{
+		return provider.ToolInstallResult{
 			ToolName:           tool.ToolName,
 			IsAlreadyInstalled: true,
 			ConcreteVersion:    resolution.VersionString,
 		}, nil
 	} else {
-		err = installToolVersion(tool.ToolName, resolution.VersionString)
+		err = a.installToolVersion(tool.ToolName, resolution.VersionString)
 		if err != nil {
-			return toolprovider.ToolInstallResult{}, err
+			return provider.ToolInstallResult{}, err
 		}
 
-		// TODO: reshim workarounds
-
-		return toolprovider.ToolInstallResult{
+		return provider.ToolInstallResult{
 			ToolName:           tool.ToolName,
 			IsAlreadyInstalled: false,
 			ConcreteVersion:    resolution.VersionString,

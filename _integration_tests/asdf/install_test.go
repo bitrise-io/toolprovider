@@ -3,8 +3,8 @@ package integration_tests
 import (
 	"testing"
 
-	"github.com/bitrise-io/toolprovider"
-	"github.com/bitrise-io/toolprovider/asdf"
+	"github.com/bitrise-io/toolprovider/provider"
+	"github.com/bitrise-io/toolprovider/provider/asdf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,18 +21,18 @@ func TestAsdfInstall(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider := asdf.AsdfToolProvider{
+	asdfProvider := asdf.AsdfToolProvider{
 		ExecEnv: asdf.ExecEnv{
 			EnvVars:   testEnv.envVars,
 			ShellInit: testEnv.shellInit,
 		},
 	}
 
-	request := toolprovider.ToolRequest{
+	request := provider.ToolRequest{
 		ToolName:        "nodejs",
 		UnparsedVersion: "18.16.0",
 	}
-	result, err := provider.InstallTool(request)
+	result, err := asdfProvider.InstallTool(request)
 	require.NoError(t, err)
 	require.Equal(t, "nodejs", result.ToolName)
 	require.Equal(t, "18.16.0", result.ConcreteVersion)

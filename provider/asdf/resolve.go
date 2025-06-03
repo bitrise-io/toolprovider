@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/bitrise/v2/log"
-	"github.com/bitrise-io/toolprovider"
+	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/hashicorp/go-version"
 )
 
@@ -27,13 +27,13 @@ type VersionResolution struct {
 }
 
 func ResolveVersion(
-	request toolprovider.ToolRequest,
+	request provider.ToolRequest,
 	releasedVersions []string,
 	installedVersions []string,
 ) (VersionResolution, error) {
 	// Short-circuit for exact version match among installed versions
 	if slices.Contains(installedVersions, strings.TrimSpace(request.UnparsedVersion)) {
-		if request.ResolutionStrategy != toolprovider.ResolutionStrategyStrict {
+		if request.ResolutionStrategy != provider.ResolutionStrategyStrict {
 			log.Warn("Request matches an installed version, but resolution strategy is not set to strict. You might want to use a partial version string as the requested version.")
 		}
 		requestedSemVer, err := version.NewVersion(request.UnparsedVersion)
@@ -48,7 +48,7 @@ func ResolveVersion(
 	// TODO
 	isToolSemVer, _ := isToolSemVer(releasedVersions)
 
-	if request.ResolutionStrategy == toolprovider.ResolutionStrategyStrict {
+	if request.ResolutionStrategy == provider.ResolutionStrategyStrict {
 		if slices.Contains(releasedVersions, request.UnparsedVersion) {
 			requestedSemVer, _ := version.NewVersion(request.UnparsedVersion)
 			return VersionResolution{
@@ -61,7 +61,7 @@ func ResolveVersion(
 		return VersionResolution{}, ErrNoMatchingVersion
 	}
 
-	if request.ResolutionStrategy == toolprovider.ResolutionStrategyLatestInstalled {
+	if request.ResolutionStrategy == provider.ResolutionStrategyLatestInstalled {
 		if isToolSemVer {
 			// Installed versions are checked first because strategy is "latest installed"
 			var sortedInstalledVersions version.Collection
@@ -146,7 +146,7 @@ func ResolveVersion(
 
 			return VersionResolution{}, ErrNoMatchingVersion
 		}
-	} else if request.ResolutionStrategy == toolprovider.ResolutionStrategyLatestReleased {
+	} else if request.ResolutionStrategy == provider.ResolutionStrategyLatestReleased {
 		if isToolSemVer {
 			var sortedReleasedVersions version.Collection
 			for _, v := range releasedVersions {

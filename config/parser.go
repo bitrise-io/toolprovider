@@ -1,10 +1,12 @@
-package toolprovider
+package config
 
 import (
 	"fmt"
 
 	"github.com/bitrise-io/bitrise/v2/bitrise"
 	"github.com/bitrise-io/bitrise/v2/models"
+
+	"github.com/bitrise-io/toolprovider/provider"
 )
 
 const keyExperimental = "experimental"
@@ -19,7 +21,7 @@ func ParseBitriseYml(path string) (models.BitriseDataModel, error) {
 	return model, nil
 }
 
-func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]ToolRequest, error) {
+func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provider.ToolRequest, error) {
 	if bitriseYml.Meta == nil {
 		return nil, fmt.Errorf("parse bitrise.yml: meta block is not defined")
 	}
@@ -34,7 +36,7 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]ToolR
 		return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s block is not defined", keyExperimental, keyToolDeclarations)
 	}
 
-	toolDeclarations := make(map[string]ToolRequest)
+	toolDeclarations := make(map[string]provider.ToolRequest)
 	for toolName, toolData := range toolBlock {
 		toolDataMap, ok := toolData.(map[string]any)
 		if !ok {
@@ -47,7 +49,7 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]ToolR
 			return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version is not a string", keyExperimental, keyToolDeclarations, toolName)
 		}
 
-		var resolutionStrategy ResolutionStrategy
+		var resolutionStrategy provider.ResolutionStrategy
 		if toolDataMap["resolution_strategy"] != nil {
 			resolutionStrategyString, ok := toolDataMap["resolution_strategy"].(string)
 			if !ok {
@@ -55,17 +57,17 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]ToolR
 			}
 			switch resolutionStrategyString {
 			case "":
-				resolutionStrategy = ResolutionStrategyStrict
+				resolutionStrategy = provider.ResolutionStrategyStrict
 			case "strict":
-				resolutionStrategy = ResolutionStrategyStrict
+				resolutionStrategy = provider.ResolutionStrategyStrict
 			case "closest_installed":
-				resolutionStrategy = ResolutionStrategyLatestInstalled
+				resolutionStrategy = provider.ResolutionStrategyLatestInstalled
 			case "closest_released":
-				resolutionStrategy = ResolutionStrategyLatestReleased
+				resolutionStrategy = provider.ResolutionStrategyLatestReleased
 			}
 		}
 
-		toolDeclarations[toolName] = ToolRequest{
+		toolDeclarations[toolName] = provider.ToolRequest{
 			ToolName:           toolName,
 			UnparsedVersion:    version,
 			ResolutionStrategy: resolutionStrategy,

@@ -1,4 +1,4 @@
-package toolprovider
+package provider
 
 type ResolutionStrategy int
 
