@@ -23,6 +23,8 @@ const (
 	flavorAsdfRewrite
 )
 
+const cacheDir = "bitrise-asdf-test-cache"
+
 type asdfInstallation struct {
 	flavor  flavor
 	version string
@@ -34,22 +36,14 @@ type testEnv struct {
 	shellInit string
 }
 
-// TODO: Cache downloaded versions
-
 // createTestEnv creates an isolated installation of a given asdf version for testing.
-func createTestEnv(t *testing.T, install asdfInstallation) (testEnv, error) {
+func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, error) {
 	dataDir := t.TempDir()
 	shimsDir := filepath.Join(dataDir, "shims")
-	installDir := t.TempDir()
 
-	if install.flavor == flavorAsdfRewrite {
-		if err := downloadReleaseBinary(t, install.version, installDir); err != nil {
-			return testEnv{}, fmt.Errorf("download asdf binary: %w", err)
-		}
-	} else if install.flavor == flavorAsdfClassic {
-		if err := gitCheckout(t, install.version, installDir); err != nil {
-			return testEnv{}, fmt.Errorf("checkout asdf version %s: %w", install.version, err)
-		}
+	installDir, err := install(t, installRequest)
+	if err != nil {
+		return testEnv{}, fmt.Errorf("install asdf: %w", err)
 	}
 
 	testingEnv := testEnv{
@@ -60,13 +54,13 @@ func createTestEnv(t *testing.T, install asdfInstallation) (testEnv, error) {
 		},
 	}
 
-	if install.flavor == flavorAsdfClassic {
+	if installRequest.flavor == flavorAsdfClassic {
 		// https://github.com/asdf-vm/asdf/blob/v0.14.1/docs/guide/getting-started.md
 		testingEnv.shellInit = fmt.Sprintf(". %s", filepath.Join(installDir, "asdf.sh"))
 		testingEnv.envVars["ASDF_DIR"] = installDir
 	}
 
-	for _, plugin := range install.plugins {
+	for _, plugin := range installRequest.plugins {
 		out, err := testingEnv.runAsdf("plugin", "add", plugin)
 		if err != nil {
 			return testingEnv, fmt.Errorf("install asdf plugin %s: %w\n\nOutput:\n%s", plugin, err, out)
@@ -98,6 +92,32 @@ func (te *testEnv) runAsdf(args ...string) (string, error) {
 	}
 
 	return string(output), nil
+}
+
+func install(t *testing.T, install asdfInstallation) (string, error) {
+	installDir := filepath.Join(os.TempDir(), cacheDir, fmt.Sprintf("asdf-v%s", install.version))
+	_, err := os.Stat(installDir)
+	if err == nil {
+		// Already installed and cached
+		return installDir, nil
+	}
+
+	if err != nil && !os.IsNotExist(err) {
+		// Unexpected error
+		return "", fmt.Errorf("check cache directory %s: %w", installDir, err)
+	}
+
+	// Not found in cache, installing now
+	if install.flavor == flavorAsdfRewrite {
+		if err := downloadReleaseBinary(t, install.version, installDir); err != nil {
+			return "", fmt.Errorf("download asdf binary: %w", err)
+		}
+	} else if install.flavor == flavorAsdfClassic {
+		if err := gitCheckout(t, install.version, installDir); err != nil {
+			return "", fmt.Errorf("checkout asdf version %s: %w", install.version, err)
+		}
+	}
+	return installDir, nil
 }
 
 func gitCheckout(t *testing.T, version string, targetDir string) error {
