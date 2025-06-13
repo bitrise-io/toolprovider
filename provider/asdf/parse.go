@@ -2,6 +2,8 @@ package asdf
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/hashicorp/go-version"
@@ -33,7 +35,11 @@ func (a *AsdfToolProvider) listInstalled(toolName string) ([]string, error) {
 	}
 
 	installedVersions := parseAsdfListOutput(output)
-	return installedVersions, nil
+	filteredVersions, err := filterAliasVersions(toolName, installedVersions)
+	if err != nil {
+		return nil, fmt.Errorf("filter alias versions: %w", err)
+	}
+	return filteredVersions, nil
 }
 
 // TODO: check if tool-plugin is installed
@@ -80,4 +86,25 @@ func parseAsdfListOutput(output string) []string {
 		versions = append(versions, strings.TrimSpace(strings.Replace(lines[i], "*", "", 1)))
 	}
 	return versions
+}
+
+func filterAliasVersions(tool string, versions []string) ([]string, error) {
+	// Filter out versions that are symlinks created by the asdf-alias plugin.
+	var filtered []string
+	for _, v := range versions {
+		out, err := exec.Command("asdf", "where", tool, v).Output()
+		if err != nil {
+			return nil, fmt.Errorf("asdf where %s %s: %w", tool, v, err)
+		}
+
+		fileInfo, err := os.Lstat(strings.TrimSpace(string(out)))
+		if err != nil {
+			return nil, fmt.Errorf("lstat %s: %w", strings.TrimSpace(string(out)), err)
+		}
+
+		if fileInfo.Mode()&os.ModeSymlink == 0 {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered, nil
 }
