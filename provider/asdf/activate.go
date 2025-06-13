@@ -13,6 +13,6 @@ func (a *AsdfToolProvider) ActivateEnv(result provider.ToolInstallResult) (provi
 		ContributedEnvVars: map[string]string{
 			envKey: result.ConcreteVersion,
 		},
-		ContributedPaths: []string{},
+		ContributedPaths: []string{}, // TODO: shims dir?
 	}, nil
 }
