@@ -30,7 +30,7 @@ workflows:
                 #!/bin/bash
                 set -ex
 
-                git tag -a "snapshot-$(git rev-parse --short HEAD)" -m "Snapshot release"
+                git tag -a "v0.0.0-$(git rev-parse --short HEAD)" -m "Snapshot release"
                 goreleaser release --clean
 
 meta:
