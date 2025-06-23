@@ -20,12 +20,12 @@ workflows:
           run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
       - git-clone@8: {}
       - script@1:
-          title: Run toolprovider
+          title: Run latest toolprovider snapshot release
           inputs:
             - content: |
                 #!/bin/bash
                 set -ex
-                gh release download --repo bitrise-io/toolprovider --pattern toolprovider-linux-arm64 --dir /usr/local/bin
+                gh release download --repo bitrise-io/toolprovider --pattern toolprovider-linux-amd64 --dir /usr/local/bin
                 toolprovider
       - script@1:
           title: Install GoReleaser

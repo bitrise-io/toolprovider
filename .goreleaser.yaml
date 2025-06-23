@@ -44,7 +44,6 @@ release:
     owner: bitrise-io
     name: toolprovider
   draft: false
-  prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
   header: |
     ## What's Changed
