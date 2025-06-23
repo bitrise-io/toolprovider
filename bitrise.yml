@@ -1,11 +1,41 @@
 format_version: "17"
 
 
-workflows: {}
+workflows:
+  release-snapshot:
+    triggers:
+      push:
+        - branch: main
+    steps:
+      - activate-ssh-key@4:
+          run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+      - git-clone@8: {}
+      - script@1:
+          title: Install GoReleaser
+          inputs:
+            - content: |
+                #!/bin/bash
+                set -ex
+                echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
+                sudo apt update
+                sudo apt install goreleaser
+      - script@1:
+          title: Run tests
+          inputs:
+            - content: go test ./...
+      - script@1:
+          title: Create GitHub Release
+          inputs:
+            - content: |
+                #!/bin/bash
+                set -ex
+
+                git tag -a "snapshot-$(git rev-parse --short HEAD)" -m "Snapshot release"
+                goreleaser release --clean
 
 meta:
   bitrise.io:
-    stack: "osx-xcode-15.0.x"
+    stack: ubuntu-noble-24.04-bitrise-2025-android
   experimental:
     tools:
       golang:
