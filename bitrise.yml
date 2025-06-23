@@ -25,7 +25,7 @@ workflows:
             - content: |
                 #!/bin/bash
                 set -ex
-                gh release download --repo bitrise-io/toolprovider --pattern toolprovider-linux-amd64 --dir /usr/local/bin
+                gh release download --repo bitrise-io/toolprovider --pattern toolprovider-linux-amd64 --output /usr/local/bin/toolprovider
                 toolprovider
       - script@1:
           title: Install GoReleaser
