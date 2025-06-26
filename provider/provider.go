@@ -14,7 +14,6 @@ type ToolRequest struct {
 	UnparsedVersion    string
 	ResolutionStrategy ResolutionStrategy
 	// TODO: PostInstall script
-	// TODO: InstallEnv env vars
 }
 
 type ToolInstallResult struct {
