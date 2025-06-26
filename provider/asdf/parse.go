@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/go-version"
@@ -16,7 +17,12 @@ func (a *AsdfToolProvider) asdfVersion() (*version.Version, error) {
 	}
 
 	versionStr := strings.TrimSpace(string(output))
-	ver, err := version.NewVersion(versionStr)
+	pattern := regexp.MustCompile(`(?:asdf version )?v?(\d+\.\d+\.\d+)( \(?:revision .+\))?`)
+	matches := pattern.FindStringSubmatch(versionStr)
+	if len(matches) < 2 {
+		return nil, fmt.Errorf("parse version from --version output: %s", versionStr)
+	}
+	ver, err := version.NewVersion(matches[1])
 	if err != nil {
 		return nil, fmt.Errorf("parse asdf version: %w", err)
 	}
@@ -48,14 +54,14 @@ func (a *AsdfToolProvider) listReleased(toolName string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var subcommand string
+	var subcommands []string
 	if asdfVer.GreaterThanOrEqual(version.Must(version.NewVersion("0.16.0"))) {
-		subcommand = "list all"
+		subcommands = []string{"list", "all", toolName}
 	} else {
-		subcommand = "list-all"
+		subcommands = []string{"list-all", toolName}
 	}
 
-	output, err := a.ExecEnv.runAsdf(subcommand, toolName)
+	output, err := a.ExecEnv.runAsdf(subcommands...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +86,7 @@ func parseAsdfListOutput(output string) []string {
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	var versions []string = []string{}
 
-	if lines[0] == "No versions installed" {
+	if lines[0] == "No versions installed" || strings.Contains(lines[0], "No compatible versions installed") {
 		return versions
 	}
 	for i := range lines {
