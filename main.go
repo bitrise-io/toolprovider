@@ -60,7 +60,10 @@ func main() {
 	}
 	var toolInstalls []provider.ToolInstallResult
 	for toolName, toolRequest := range toolDeclarations {
-		fmt.Printf("Installing %s v%s...\n", toolName, toolRequest.UnparsedVersion)
+		canonicalToolName := provider.GetCanonicalToolName(toolName)
+		toolRequest.ToolName = canonicalToolName
+
+		fmt.Printf("Installing %s v%s...\n", canonicalToolName, toolRequest.UnparsedVersion)
 		result, err := asdfProvider.InstallTool(toolRequest)
 		if err != nil {
 			panic(err)
@@ -70,7 +73,7 @@ func main() {
 		if result.IsAlreadyInstalled {
 			fmt.Printf("%s v%s is already installed.\n", result.ToolName, result.ConcreteVersion)
 		} else {
-			fmt.Printf("Successfully installed %s v%s.\n", result.ToolName, result.ConcreteVersion)	
+			fmt.Printf("Successfully installed %s v%s.\n", result.ToolName, result.ConcreteVersion)
 		}
 	}
 
