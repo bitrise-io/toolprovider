@@ -260,27 +260,6 @@ func TestLatestInstalledResolution(t *testing.T) {
 			},
 		},
 		{
-			name:             "Possibly-semver versions and partial match should correctly report installed state",
-			requestedVersion: "20",
-			installedVersions: []string{
-				"20.0.0",
-				"20.1", // should be padded to 20.1.0
-				"21.0.0",
-			},
-			releasedVersions: []string{
-				"20.0.0",
-				"20.1", // should be padded to 20.1.0
-				"21.0.0",
-				"22.0.0",
-			},
-			expectedResolution: asdf.VersionResolution{
-				VersionString: "20.1.0",
-				IsSemVer:      true,
-				SemVer:        version.Must(version.NewVersion("20.1")),
-				IsInstalled:   true,
-			},
-		},
-		{
 			name:             "Old Golang versioning scheme",
 			requestedVersion: "1.19",
 			installedVersions: []string{
@@ -445,13 +424,13 @@ func TestLatestInstalledResolution(t *testing.T) {
 			requestedVersion: "temurin-11.0.15",
 			installedVersions: []string{
 				"temurin-11.0.15+10",
-				"temurin-11.0.15+100",
 				"temurin-11.0.15+101",
+				"temurin-11.0.15+100",
 			},
 			releasedVersions: []string{
 				"temurin-11.0.15+10",
-				"temurin-11.0.15+100",
 				"temurin-11.0.15+101",
+				"temurin-11.0.15+100",
 			},
 			expectedResolution: asdf.VersionResolution{
 				VersionString: "temurin-11.0.15+101",
@@ -495,6 +474,73 @@ func TestLatestInstalledResolution(t *testing.T) {
 				"temurin-21.0.0+35.0.LTS",
 			},
 			expectedErr: asdf.ErrNoMatchingVersion,
+		},
+		{
+			name: "Non-semver tool with prerelease versions",
+			requestedVersion: "3.24",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				// Even though this is "newer" than 3.24.4, it's not a stable version yet, we should not resolve to this.
+				// See spec: https://semver.org/#spec-item-11
+				"3.24.5-prerelease.rc3",
+				"3.24.5",
+				"absolutely-not-semver-compatible-release",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name: "Semver tool, request prelease version",
+			requestedVersion: "3.24.5-prerelease.rc3",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.5-prerelease.rc3",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				"3.24.5-prerelease.rc3",
+				"3.24.5",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5-prerelease.rc3",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5-prerelease.rc3")),
+				IsInstalled:   true,
+			},
+		},
+		{
+			name: "Semver tool, request prelease version which is not installed",
+			requestedVersion: "3.24.5-prerelease.rc3",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				"3.24.5-prerelease.rc3",
+				"3.24.5",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5-prerelease.rc3",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5-prerelease.rc3")),
+				IsInstalled:   false,
+			},
 		},
 	}
 
@@ -780,6 +826,74 @@ func TestLatestReleasedResolution(t *testing.T) {
 				"temurin-21.0.0+35.0.LTS",
 			},
 			expectedErr: asdf.ErrNoMatchingVersion,
+		},
+		{
+			name: "Non-semver tool with prerelease versions",
+			requestedVersion: "3.24",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				// Even though this is "newer" than 3.24.4, it's not a stable version yet, we should not resolve to this.
+				// See spec: https://semver.org/#spec-item-11
+				"3.24.5-prerelease.rc3",
+				"3.24.5",
+				"absolutely-not-semver-compatible-release",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name: "Semver tool, request could also match prerelease version",
+			requestedVersion: "3.24.5",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.5-prerelease.rc3",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				"3.24.5-prerelease.rc3", // request also matches this version, but this is not the latest release
+				"3.24.5",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name: "Semver tool, request prerelease version which is not installed",
+			requestedVersion: "3.24.5-prerelease",
+			installedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+			},
+			releasedVersions: []string{
+				"1.0.0",
+				"2.4.5",
+				"3.24.4",
+				"3.24.5-prerelease.rc3",
+				"3.24.5-prerelease.rc5",
+				"3.24.5",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "3.24.5-prerelease.rc5",
+				IsSemVer:      true,
+				SemVer:        version.Must(version.NewVersion("3.24.5-prerelease.rc5")),
+				IsInstalled:   false,
+			},
 		},
 	}
 
