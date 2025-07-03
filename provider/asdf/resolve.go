@@ -1,7 +1,6 @@
 package asdf
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -12,12 +11,21 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-var ErrStrictVersionNotInstalled = errors.New("requested version is not installed and resolution strategy is strict")
+type ErrNoMatchingVersion struct {
+	AvailableVersions []string
+}
 
-// TODO: better error when update is implemented
-var ErrNoMatchingVersion = errors.New("no matching version found")
+func (e ErrNoMatchingVersion) Error() string {
+	if len(e.AvailableVersions) == 0 {
+		return "no matching version found"
+	}
 
-var ErrRequestedVersionNotSemVer = errors.New("requested version is not semver compatible while available tool versions follow semver")
+	versionList := ""
+	for _, v := range e.AvailableVersions {
+		versionList += fmt.Sprintf("- %s\n", v)
+	}
+	return fmt.Sprintf("no matching version found, available versions: \n%s", versionList)
+}
 
 type VersionResolution struct {
 	VersionString string
@@ -55,7 +63,7 @@ func ResolveVersion(
 				IsInstalled:   slices.Contains(installedVersions, request.UnparsedVersion),
 			}, nil
 		}
-		return VersionResolution{}, ErrNoMatchingVersion
+		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
 	}
 
 	if request.ResolutionStrategy == provider.ResolutionStrategyLatestInstalled {
@@ -94,7 +102,7 @@ func ResolveVersion(
 			}
 		}
 
-		return VersionResolution{}, ErrNoMatchingVersion
+		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
 	} else if request.ResolutionStrategy == provider.ResolutionStrategyLatestReleased {
 		sortedReleasedVersions := logicallySortedVersions(releasedVersions)
 		for _, v := range sortedReleasedVersions {
@@ -116,7 +124,7 @@ func ResolveVersion(
 				}, nil
 			}
 		}
-		return VersionResolution{}, ErrNoMatchingVersion
+		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
 	}
 
 	return VersionResolution{}, fmt.Errorf("unknown resolution strategy: %v", request.ResolutionStrategy)
