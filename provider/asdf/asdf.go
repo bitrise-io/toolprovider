@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/bitrise/v2/log"
 	"github.com/bitrise-io/toolprovider/provider"
+	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 )
 
 type ProviderOptions struct {
@@ -15,7 +16,7 @@ type ProviderOptions struct {
 }
 
 type AsdfToolProvider struct {
-	ExecEnv ExecEnv
+	ExecEnv execenv.ExecEnv
 }
 
 func (a *AsdfToolProvider) Bootstrap() error {
@@ -53,7 +54,7 @@ func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.Tool
 		if errors.Is(err, &ErrNoMatchingVersion{}) {
 			log.Warn("No matching version found, updating asdf-%s plugin and retrying...", tool.ToolName)
 			// Some asdf plugins hardcode the list of installable versions and need a new plugin release to support new versions.
-			_, err = a.ExecEnv.runAsdf("plugin", "update", tool.ToolName)
+			_, err = a.ExecEnv.RunAsdf("plugin", "update", tool.ToolName)
 			if err != nil {
 				return provider.ToolInstallResult{}, fmt.Errorf("update plugin: %w", err)
 			}

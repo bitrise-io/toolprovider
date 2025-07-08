@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/toolprovider/config"
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/provider/asdf"
+	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 )
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 	fmt.Println("Installing any missing tools...")
 
 	asdfProvider := asdf.AsdfToolProvider{
-		ExecEnv: asdf.ExecEnv{
+		ExecEnv: execenv.ExecEnv{
 			EnvVars:   convertEnvToMap(os.Environ()),
 			ShellInit: "", // TODO
 		},

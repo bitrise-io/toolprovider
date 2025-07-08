@@ -11,7 +11,7 @@ import (
 )
 
 func (a *AsdfToolProvider) asdfVersion() (*version.Version, error) {
-	output, err := a.ExecEnv.runAsdf("--version")
+	output, err := a.ExecEnv.RunAsdf("--version")
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (a *AsdfToolProvider) asdfVersion() (*version.Version, error) {
 
 // TODO: check if tool-plugin is installed
 func (a *AsdfToolProvider) listInstalled(toolName string) ([]string, error) {
-	output, err := a.ExecEnv.runAsdf("list", toolName)
+	output, err := a.ExecEnv.RunAsdf("list", toolName)
 	if err != nil {
 		// asdf 0.16.0+ returns exit code 1 if no versions are installed
 		if strings.Contains(err.Error(), "No compatible versions installed") {
@@ -61,7 +61,7 @@ func (a *AsdfToolProvider) listReleased(toolName string) ([]string, error) {
 		subcommands = []string{"list-all", toolName}
 	}
 
-	output, err := a.ExecEnv.runAsdf(subcommands...)
+	output, err := a.ExecEnv.RunAsdf(subcommands...)
 	if err != nil {
 		return nil, err
 	}
