@@ -1,6 +1,10 @@
 package asdf
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bitrise-io/toolprovider/provider/asdf/workarounds"
+)
 
 
 func (a *AsdfToolProvider) installToolVersion(
@@ -14,7 +18,11 @@ func (a *AsdfToolProvider) installToolVersion(
 		return fmt.Errorf("install %s %s: %w\n\nOutput:\n%s", toolName, versionString, err, out)
 	}
 
-
-	// TODO: reshim workarounds after install
+	if toolName == "nodejs" {
+		err = workarounds.SetupCorepack(a.ExecEnv, versionString)
+		if err != nil {
+			return fmt.Errorf("setup corepack for %s %s: %w", toolName, versionString, err)
+		}
+	}
 	return nil
 }

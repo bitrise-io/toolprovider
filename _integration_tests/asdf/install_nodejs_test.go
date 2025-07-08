@@ -49,3 +49,36 @@ func TestAsdfInstallNodeVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestCorepackWithNewNodeInstall(t *testing.T) {
+	testEnv, err := createTestEnv(t, asdfInstallation{
+		flavor:  flavorAsdfClassic,
+		version: "0.14.0",
+		plugins: []string{"nodejs"},
+	})
+	require.NoError(t, err)
+
+	asdfProvider := asdf.AsdfToolProvider{
+		ExecEnv: execenv.ExecEnv{
+			EnvVars:   testEnv.envVars,
+			ShellInit: testEnv.shellInit,
+		},
+	}
+	request := provider.ToolRequest{
+		ToolName:        "nodejs",
+		UnparsedVersion: "22.17.0",
+	}
+	result, err := asdfProvider.InstallTool(request)
+	require.NoError(t, err)
+	require.Equal(t, "nodejs", result.ToolName)
+	require.Equal(t, "22.17.0", result.ConcreteVersion)
+	require.False(t, result.IsAlreadyInstalled)
+
+	extraEnvs := map[string]string{
+		// Simulate the activated environment
+		"ASDF_NODEJS_VERSION": "22.17.0",
+	}
+	out, err := testEnv.runCommand(extraEnvs, "pnpm", "--help")
+	require.NoError(t, err)
+	require.Contains(t, out, "Usage: pnpm [command] [flags]")
+}
