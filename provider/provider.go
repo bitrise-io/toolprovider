@@ -1,5 +1,7 @@
 package provider
 
+import "fmt"
+
 type ResolutionStrategy int
 
 const (
@@ -27,6 +29,34 @@ type ToolInstallResult struct {
 	// It may differ from the requested version if the requested version was not a concrete version.
 	// This value may or may not be a valid semantic version.
 	ConcreteVersion string
+}
+
+type ToolInstallError struct {
+	ToolName         string
+	RequestedVersion string
+
+	// Optional fields
+	RawOutput      string
+	Cause          string
+	Recommendation string
+}
+
+func (e ToolInstallError) Error() string {
+	msg := fmt.Sprintf("Error: failed to install %s %s", e.ToolName, e.RequestedVersion)
+
+	if e.Cause != "" {
+		msg += "\nCause: " + e.Cause
+	}
+
+	if e.Recommendation != "" {
+		msg += "\nRecommendation: " + e.Recommendation
+	}
+
+	if e.RawOutput != "" {
+		msg += "\nAdditional info: " + e.RawOutput
+	}
+
+	return msg
 }
 
 type EnvironmentActivation struct {

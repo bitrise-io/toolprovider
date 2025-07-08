@@ -36,6 +36,7 @@ func (a *AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
 	}
 	if plugin == nil {
 		// Could not resolve plugin source.
+		// TODO
 		return fmt.Errorf("no plugin source defined for tool %s", tool.ToolName)
 	}
 	if plugin.PluginName == "" {

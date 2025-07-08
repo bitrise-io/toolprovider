@@ -6,25 +6,31 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bitrise-io/bitrise/v2/log"
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/hashicorp/go-version"
 )
 
 type ErrNoMatchingVersion struct {
+	RequestedVersion string
 	AvailableVersions []string
 }
 
 func (e ErrNoMatchingVersion) Error() string {
 	if len(e.AvailableVersions) == 0 {
-		return "no matching version found"
+		return "no match for requested version " + e.RequestedVersion
 	}
 
 	versionList := ""
 	for _, v := range e.AvailableVersions {
-		versionList += fmt.Sprintf("- %s\n", v)
+		if strings.HasPrefix(v, e.RequestedVersion) {
+			versionList += fmt.Sprintf("- %s\n", v)
+		}
 	}
-	return fmt.Sprintf("no matching version found, available versions: \n%s", versionList)
+	if versionList == "" {
+		return fmt.Sprintf("no match for requested version %s", e.RequestedVersion)
+	} else {
+		return fmt.Sprintf("no match for %s. Similar versions: \n%s", e.RequestedVersion, versionList)
+	}
 }
 
 type VersionResolution struct {
@@ -41,9 +47,6 @@ func ResolveVersion(
 ) (VersionResolution, error) {
 	// Short-circuit for exact version match among installed versions
 	if slices.Contains(installedVersions, strings.TrimSpace(request.UnparsedVersion)) {
-		if request.ResolutionStrategy != provider.ResolutionStrategyStrict {
-			log.Warn("Request matches an installed version, but resolution strategy is not set to strict. You might want to use a partial version string as the requested version.")
-		}
 		requestedSemVer, err := version.NewVersion(request.UnparsedVersion)
 		return VersionResolution{
 			VersionString: request.UnparsedVersion,
@@ -63,7 +66,7 @@ func ResolveVersion(
 				IsInstalled:   slices.Contains(installedVersions, request.UnparsedVersion),
 			}, nil
 		}
-		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
+		return VersionResolution{}, &ErrNoMatchingVersion{AvailableVersions: releasedVersions, RequestedVersion: request.UnparsedVersion}
 	}
 
 	switch request.ResolutionStrategy {
@@ -103,7 +106,7 @@ func ResolveVersion(
 			}
 		}
 
-		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
+		return VersionResolution{}, &ErrNoMatchingVersion{AvailableVersions: releasedVersions, RequestedVersion: request.UnparsedVersion}
 	case provider.ResolutionStrategyLatestReleased:
 		sortedReleasedVersions := logicallySortedVersions(releasedVersions)
 		for _, v := range sortedReleasedVersions {
@@ -125,7 +128,7 @@ func ResolveVersion(
 				}, nil
 			}
 		}
-		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
+		return VersionResolution{}, &ErrNoMatchingVersion{AvailableVersions: releasedVersions, RequestedVersion: request.UnparsedVersion}
 	}
 
 	return VersionResolution{}, fmt.Errorf("unknown resolution strategy: %v", request.ResolutionStrategy)

@@ -56,7 +56,8 @@ func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.Tool
 
 	resolution, err := ResolveVersion(tool, releasedVersions, installedVersions)
 	if err != nil {
-		if errors.Is(err, &ErrNoMatchingVersion{}) {
+		var nomatchErr *ErrNoMatchingVersion
+		if errors.As(err, &nomatchErr) {
 			log.Warn("No matching version found, updating asdf-%s plugin and retrying...", tool.ToolName)
 			// Some asdf plugins hardcode the list of installable versions and need a new plugin release to support new versions.
 			_, err = a.ExecEnv.RunAsdf("plugin", "update", tool.ToolName)
@@ -69,7 +70,15 @@ func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.Tool
 			}
 			resolution, err = ResolveVersion(tool, releasedVersions, installedVersions)
 			if err != nil {
-				// TODO: better error here
+				if errors.As(err, &nomatchErr) {
+					errorDetails := provider.ToolInstallError{
+						ToolName:         tool.ToolName,
+						RequestedVersion: tool.UnparsedVersion,
+						Cause:            nomatchErr.Error(),
+						Recommendation:   fmt.Sprintf("You might want to use `%s:installed` or `%s:latest` to install the latest installed or latest released version of %s %s.", tool.UnparsedVersion, tool.UnparsedVersion, tool.ToolName, tool.UnparsedVersion),
+					}
+					return provider.ToolInstallResult{}, errorDetails
+				}
 				return provider.ToolInstallResult{}, fmt.Errorf("resolve version: %w", err)
 			}
 		}
