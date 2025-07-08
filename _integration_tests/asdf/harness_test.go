@@ -38,6 +38,7 @@ type testEnv struct {
 
 // createTestEnv creates an isolated installation of a given asdf version for testing.
 func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, error) {
+	homeDir := t.TempDir()
 	dataDir := t.TempDir()
 	shimsDir := filepath.Join(dataDir, "shims")
 
@@ -48,15 +49,20 @@ func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, erro
 
 	testingEnv := testEnv{
 		envVars: map[string]string{
-			"PATH":             fmt.Sprintf("%s:%s:%s", installDir, shimsDir, os.Getenv("PATH")),
+			"PATH": fmt.Sprintf("%s:%s:%s", installDir, shimsDir, os.Getenv("PATH")),
+			// ASDF_DATA_DIR is where plugins and tool versions are installed (not to be confused with ASDF_DIR)
 			"ASDF_DATA_DIR":    dataDir,
 			"ASDF_CONFIG_FILE": filepath.Join(dataDir, ".asdfrc"),
+			// Avoid conflicts with other asdf installations (global .tool-versions file is in $HOME)
+			"HOME": homeDir,
+			"PWD":  homeDir,
 		},
 	}
 
 	if installRequest.flavor == flavorAsdfClassic {
 		// https://github.com/asdf-vm/asdf/blob/v0.14.1/docs/guide/getting-started.md
 		testingEnv.shellInit = fmt.Sprintf(". %s", filepath.Join(installDir, "asdf.sh"))
+		// ASDF_DIR is where asdf itself is installed (unlike ASDF_DATA_DIR)
 		testingEnv.envVars["ASDF_DIR"] = installDir
 	}
 
@@ -71,24 +77,29 @@ func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, erro
 }
 
 func (te *testEnv) runAsdf(args ...string) (string, error) {
-	asdfCmd := []string{}
+	cmdWithArgs := append([]string{"asdf"}, args...)
+	return te.runCommand(nil, cmdWithArgs...)
+}
+
+func (te *testEnv) runCommand(extraEnvs map[string]string, args ...string) (string, error) {
+	innerShellCmd := []string{}
 	if te.shellInit != "" {
-		asdfCmd = append(asdfCmd, te.shellInit+" && ")
+		innerShellCmd = append(innerShellCmd, te.shellInit+" &&")
 	}
-	asdfCmd = append(asdfCmd, "asdf")
-	escapedAsdfArgs := shellescape.QuoteCommand(args)
-	asdfCmd = append(asdfCmd, escapedAsdfArgs)
-
-	cmdArgs := []string{"-c", strings.Join(asdfCmd, " ")}
-	command := exec.Command("bash", cmdArgs...)
-	command.Env = os.Environ()
+	innerShellCmd = append(innerShellCmd, shellescape.QuoteCommand(args))
+	bashArgs := []string{"-c", strings.Join(innerShellCmd, " ")}
+	bashCmd := exec.Command("bash", bashArgs...)
+	bashCmd.Env = os.Environ()
 	for k, v := range te.envVars {
-		command.Env = append(command.Env, fmt.Sprintf("%s=%s", k, v))
+		bashCmd.Env = append(bashCmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+	for k, v := range extraEnvs {
+		bashCmd.Env = append(bashCmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	output, err := command.CombinedOutput()
+	output, err := bashCmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("%s %s: %w\n\nOutput:\n%s", "asdf", escapedAsdfArgs, err, output)
+		return "", fmt.Errorf("%s %v: %w\n\nOutput:\n%s", "bash", bashArgs, err, output)
 	}
 
 	return string(output), nil

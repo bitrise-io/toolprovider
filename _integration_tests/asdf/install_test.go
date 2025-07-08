@@ -5,6 +5,7 @@ import (
 
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/provider/asdf"
+	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +18,7 @@ func TestAsdfInstallClassic(t *testing.T) {
 	require.NoError(t, err)
 
 	asdfProvider := asdf.AsdfToolProvider{
-		ExecEnv: asdf.ExecEnv{
+		ExecEnv: execenv.ExecEnv{
 			EnvVars:   testEnv.envVars,
 			ShellInit: testEnv.shellInit,
 		},
@@ -43,7 +44,7 @@ func TestAsdfInstallRewrite(t *testing.T) {
 	require.NoError(t, err)
 
 	asdfProvider := asdf.AsdfToolProvider{
-		ExecEnv: asdf.ExecEnv{
+		ExecEnv: execenv.ExecEnv{
 			EnvVars:   testEnv.envVars,
 			ShellInit: testEnv.shellInit,
 		},
