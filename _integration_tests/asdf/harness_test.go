@@ -38,6 +38,7 @@ type testEnv struct {
 
 // createTestEnv creates an isolated installation of a given asdf version for testing.
 func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, error) {
+	homeDir := t.TempDir()
 	dataDir := t.TempDir()
 	shimsDir := filepath.Join(dataDir, "shims")
 
@@ -48,15 +49,20 @@ func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, erro
 
 	testingEnv := testEnv{
 		envVars: map[string]string{
-			"PATH":             fmt.Sprintf("%s:%s:%s", installDir, shimsDir, os.Getenv("PATH")),
+			"PATH": fmt.Sprintf("%s:%s:%s", installDir, shimsDir, os.Getenv("PATH")),
+			// ASDF_DATA_DIR is where plugins and tool versions are installed (not to be confused with ASDF_DIR)
 			"ASDF_DATA_DIR":    dataDir,
 			"ASDF_CONFIG_FILE": filepath.Join(dataDir, ".asdfrc"),
+			// Avoid conflicts with other asdf installations (global .tool-versions file is in $HOME)
+			"HOME": homeDir,
+			"PWD":  homeDir,
 		},
 	}
 
 	if installRequest.flavor == flavorAsdfClassic {
 		// https://github.com/asdf-vm/asdf/blob/v0.14.1/docs/guide/getting-started.md
 		testingEnv.shellInit = fmt.Sprintf(". %s", filepath.Join(installDir, "asdf.sh"))
+		// ASDF_DIR is where asdf itself is installed (unlike ASDF_DATA_DIR)
 		testingEnv.envVars["ASDF_DIR"] = installDir
 	}
 
