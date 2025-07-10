@@ -6,9 +6,7 @@ meta:
     stack: ubuntu-noble-24.04-bitrise-2025-android
   experimental:
     tools:
-      golang:
-        version: "1.22"
-        resolution_strategy: closest_installed
+      golang: 1.22:installed
 
 workflows:
   release-snapshot:
