@@ -69,6 +69,7 @@ func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.Tool
 			}
 			resolution, err = ResolveVersion(tool, releasedVersions, installedVersions)
 			if err != nil {
+				// TODO: better error here
 				return provider.ToolInstallResult{}, fmt.Errorf("resolve version: %w", err)
 			}
 		}
