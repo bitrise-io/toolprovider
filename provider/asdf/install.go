@@ -14,11 +14,6 @@ func (a *AsdfToolProvider) installToolVersion(
 		return fmt.Errorf("toolName and versionString must not be empty")
 	}
 
-	err := a.InstallToolPlugin(toolName)
-	if err != nil {
-		return fmt.Errorf("install tool plugin %s: %w", toolName, err)
-	}
-
 	out, err := a.ExecEnv.RunAsdf("install", toolName, versionString)
 	if err != nil {
 		return fmt.Errorf("install %s %s: %w\n\nOutput:\n%s", toolName, versionString, err, out)
