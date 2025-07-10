@@ -1,3 +1,4 @@
+---
 format_version: "17"
 
 
@@ -11,3 +12,6 @@ meta:
       golang: 1.16.3
       nodejs: 20:installed
       ruby: 3.2:latest
+      flutter:
+        version: 3.32.5-stable
+        plugin: flutter::https://github.com/asdf-community/asdf-flutter.git

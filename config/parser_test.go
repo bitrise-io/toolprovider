@@ -3,10 +3,12 @@ package config_test
 import (
 	"testing"
 
-	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/config"
+	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/stretchr/testify/assert"
 )
+
+var flutterPlugin = "flutter::https://github.com/asdf-community/asdf-flutter.git"
 
 func TestParseBitriseYml(t *testing.T) {
 	tests := []struct {
@@ -19,8 +21,8 @@ func TestParseBitriseYml(t *testing.T) {
 			ymlPath: "testdata/valid.bitrise.yml",
 			expected: map[string]provider.ToolRequest{
 				"golang": {
-					ToolName:        "golang",
-					UnparsedVersion: "1.16.3",
+					ToolName:           "golang",
+					UnparsedVersion:    "1.16.3",
 					ResolutionStrategy: provider.ResolutionStrategyStrict,
 				},
 				"nodejs": {
@@ -29,9 +31,15 @@ func TestParseBitriseYml(t *testing.T) {
 					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
 				},
 				"ruby": {
-					ToolName:        "ruby",
-					UnparsedVersion: "3.2",
+					ToolName:           "ruby",
+					UnparsedVersion:    "3.2",
 					ResolutionStrategy: provider.ResolutionStrategyLatestReleased,
+				},
+				"flutter": {
+					ToolName:           "flutter",
+					UnparsedVersion:    "3.32.5-stable",
+					ResolutionStrategy: provider.ResolutionStrategyStrict,
+					PluginIdentifier:   &flutterPlugin,
 				},
 			},
 		},

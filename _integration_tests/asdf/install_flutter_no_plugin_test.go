@@ -1,0 +1,51 @@
+package integration_tests
+
+import (
+	"testing"
+
+	"github.com/bitrise-io/toolprovider/provider"
+	"github.com/bitrise-io/toolprovider/provider/asdf"
+	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAsdfInstallFlutterNoPlugin(t *testing.T) {
+	tests := []struct {
+		name               string
+		requestedVersion   string
+		resolutionStrategy provider.ResolutionStrategy
+		plugin             string
+		expectedVersion    string
+	}{
+		{"Install specific version", "3.32.5-stable", provider.ResolutionStrategyStrict, "flutter::https://github.com/asdf-community/asdf-flutter.git", "3.32.5-stable"},
+		{"Install specific version", "3.32.1-stable", provider.ResolutionStrategyStrict, "", "3.32.1-stable"},
+	}
+
+	for _, tt := range tests {
+		testEnv, err := createTestEnv(t, asdfInstallation{
+			flavor:  flavorAsdfClassic,
+			version: "0.14.0",
+		})
+		require.NoError(t, err)
+
+		asdfProvider := asdf.AsdfToolProvider{
+			ExecEnv: execenv.ExecEnv{
+				EnvVars:   testEnv.envVars,
+				ShellInit: testEnv.shellInit,
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			request := provider.ToolRequest{
+				ToolName:           "flutter",
+				UnparsedVersion:    tt.requestedVersion,
+				ResolutionStrategy: tt.resolutionStrategy,
+				PluginIdentifier:   &tt.plugin,
+			}
+			result, err := asdfProvider.InstallTool(request)
+			require.NoError(t, err)
+			require.Equal(t, "flutter", result.ToolName)
+			require.Equal(t, tt.expectedVersion, result.ConcreteVersion)
+			require.False(t, result.IsAlreadyInstalled)
+		})
+	}
+}

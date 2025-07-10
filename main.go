@@ -78,6 +78,12 @@ func main() {
 		}
 	}
 
+	if _, err := exec.LookPath("envman"); err != nil {
+		fmt.Println()
+		fmt.Println("Warning: envman is not installed or not in PATH. Skipping environment activation.")
+		return
+	}
+
 	fmt.Println()
 	fmt.Println("Activating environment with envman...")
 	if os.Getenv("CI") == "" {

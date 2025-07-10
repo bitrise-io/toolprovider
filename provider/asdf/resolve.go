@@ -66,7 +66,8 @@ func ResolveVersion(
 		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
 	}
 
-	if request.ResolutionStrategy == provider.ResolutionStrategyLatestInstalled {
+	switch request.ResolutionStrategy {
+	case provider.ResolutionStrategyLatestInstalled:
 		// Installed versions are checked first because strategy is "latest installed"
 		sortedInstalledVersions := logicallySortedVersions(installedVersions)
 		for _, v := range sortedInstalledVersions {
@@ -103,7 +104,7 @@ func ResolveVersion(
 		}
 
 		return VersionResolution{}, ErrNoMatchingVersion{AvailableVersions: releasedVersions}
-	} else if request.ResolutionStrategy == provider.ResolutionStrategyLatestReleased {
+	case provider.ResolutionStrategyLatestReleased:
 		sortedReleasedVersions := logicallySortedVersions(releasedVersions)
 		for _, v := range sortedReleasedVersions {
 			if strings.HasPrefix(v, request.UnparsedVersion) {

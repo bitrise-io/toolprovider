@@ -84,7 +84,7 @@ func parseAsdfListOutput(output string) []string {
 	//   1
 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	var versions []string = []string{}
+	var versions = []string{}
 
 	if lines[0] == "No versions installed" || strings.Contains(lines[0], "No compatible versions installed") {
 		return versions
