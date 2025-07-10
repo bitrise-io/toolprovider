@@ -21,11 +21,17 @@ func TestParseBitriseYml(t *testing.T) {
 				"golang": {
 					ToolName:        "golang",
 					UnparsedVersion: "1.16.3",
+					ResolutionStrategy: provider.ResolutionStrategyStrict,
 				},
 				"nodejs": {
 					ToolName:           "nodejs",
 					UnparsedVersion:    "20",
 					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
+				},
+				"ruby": {
+					ToolName:        "ruby",
+					UnparsedVersion: "3.2",
+					ResolutionStrategy: provider.ResolutionStrategyLatestReleased,
 				},
 			},
 		},

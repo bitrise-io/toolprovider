@@ -2,15 +2,17 @@ package config
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/bitrise-io/bitrise/v2/bitrise"
 	"github.com/bitrise-io/bitrise/v2/models"
-
 	"github.com/bitrise-io/toolprovider/provider"
 )
 
 const keyExperimental = "experimental"
 const keyToolDeclarations = "tools"
+const latestSyntaxPattern = `(.+):latest$`
+const installedSyntaxPattern = `(.+):installed$`
 
 func ParseBitriseYml(path string) (models.BitriseDataModel, error) {
 	model, _, err := bitrise.ReadBitriseConfig(path, bitrise.ValidationTypeMinimal)
@@ -36,44 +38,52 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provi
 		return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s block is not defined", keyExperimental, keyToolDeclarations)
 	}
 
-	toolDeclarations := make(map[string]provider.ToolRequest)
-	for toolName, toolData := range toolBlock {
-		toolDataMap, ok := toolData.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s block is not a map", keyExperimental, keyToolDeclarations, toolName)
-		}
+	latestSyntaxPattern, err := regexp.Compile(latestSyntaxPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile regex pattern: %v", err)
+	}
+	preinstalledSyntaxPattern, err := regexp.Compile(installedSyntaxPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile regex pattern: %v", err)
+	}
 
+	toolDeclarations := make(map[string]provider.ToolRequest)
+	for toolName, toolVersion := range toolBlock {
 		// TODO: string or int
-		version, ok := toolDataMap["version"].(string)
+		versionString, ok := toolVersion.(string)
 		if !ok {
 			return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version is not a string", keyExperimental, keyToolDeclarations, toolName)
 		}
 
 		var resolutionStrategy provider.ResolutionStrategy
-		if toolDataMap["resolution_strategy"] != nil {
-			resolutionStrategyString, ok := toolDataMap["resolution_strategy"].(string)
-			if !ok {
-				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.resolution_strategy is not a string", keyExperimental, keyToolDeclarations, toolName)
+		var plainVersion string
+		if latestSyntaxPattern.MatchString(versionString) {
+			resolutionStrategy = provider.ResolutionStrategyLatestReleased
+			matches := latestSyntaxPattern.FindStringSubmatch(versionString)
+			if len(matches) > 1 {
+				plainVersion = matches[1]
+			} else {
+				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version does not match latest syntax: %s", keyExperimental, keyToolDeclarations, toolName, versionString)
 			}
-			switch resolutionStrategyString {
-			case "":
-				resolutionStrategy = provider.ResolutionStrategyStrict
-			case "strict":
-				resolutionStrategy = provider.ResolutionStrategyStrict
-			case "closest_installed":
-				resolutionStrategy = provider.ResolutionStrategyLatestInstalled
-			case "closest_released":
-				resolutionStrategy = provider.ResolutionStrategyLatestReleased
+		} else if preinstalledSyntaxPattern.MatchString(versionString) {
+			resolutionStrategy = provider.ResolutionStrategyLatestInstalled
+			matches := preinstalledSyntaxPattern.FindStringSubmatch(versionString)
+			if len(matches) > 1 {
+				plainVersion = matches[1]
+			} else {
+				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version does not match preinstalled syntax: %s", keyExperimental, keyToolDeclarations, toolName, versionString)
 			}
+		} else {
+			resolutionStrategy = provider.ResolutionStrategyStrict
+			plainVersion = versionString
 		}
 
 		toolDeclarations[toolName] = provider.ToolRequest{
 			ToolName:           toolName,
-			UnparsedVersion:    version,
+			UnparsedVersion:    plainVersion,
 			ResolutionStrategy: resolutionStrategy,
 		}
 	}
 
 	return toolDeclarations, nil
-
 }
