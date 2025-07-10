@@ -67,10 +67,20 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provi
 			}
 		}
 
+		var pluginIdentifier *string
+		if v, ok := toolDataMap["plugin"]; ok && v != nil {
+			if parsed, ok := v.(string); ok {
+				pluginIdentifier = &parsed
+			} else {
+				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.plugin is not a string", keyExperimental, keyToolDeclarations, toolName)
+			}
+		}
+
 		toolDeclarations[toolName] = provider.ToolRequest{
 			ToolName:           toolName,
 			UnparsedVersion:    version,
 			ResolutionStrategy: resolutionStrategy,
+			PluginIdentifier:   pluginIdentifier,
 		}
 	}
 

@@ -28,7 +28,7 @@ func (a *AsdfToolProvider) Bootstrap() error {
 }
 
 func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.ToolInstallResult, error) {
-	err := a.InstallToolPlugin(tool.ToolName)
+	err := a.InstallPlugin(tool)
 	if err != nil {
 		return provider.ToolInstallResult{}, fmt.Errorf("install tool plugin %s: %w", tool.ToolName, err)
 	}
