@@ -27,6 +27,11 @@ func (e *ExecEnv) RunAsdf(args ...string) (string, error) {
 	return e.RunCommand(nil, cmdWithArgs...)
 }
 
+func (e *ExecEnv) RunAsdfPlugin(args ...string) (string, error) {
+	cmdWithArgs := append([]string{"asdf", "plugin"}, args...)
+	return e.RunCommand(nil, cmdWithArgs...)
+}
+
 func (e *ExecEnv) RunCommand(extraEnvs map[string]string, args ...string) (string, error) {
 	innerShellCmd := []string{}
 	if e.ShellInit != "" {

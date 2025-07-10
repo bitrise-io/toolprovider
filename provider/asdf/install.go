@@ -6,13 +6,19 @@ import (
 	"github.com/bitrise-io/toolprovider/provider/asdf/workarounds"
 )
 
-
 func (a *AsdfToolProvider) installToolVersion(
 	toolName string,
 	versionString string,
 ) error {
-	// TODO: install plugin if not installed
-	
+	if toolName == "" || versionString == "" {
+		return fmt.Errorf("toolName and versionString must not be empty")
+	}
+
+	err := a.InstallToolPlugin(toolName)
+	if err != nil {
+		return fmt.Errorf("install tool plugin %s: %w", toolName, err)
+	}
+
 	out, err := a.ExecEnv.RunAsdf("install", toolName, versionString)
 	if err != nil {
 		return fmt.Errorf("install %s %s: %w\n\nOutput:\n%s", toolName, versionString, err, out)
