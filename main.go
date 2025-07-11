@@ -23,9 +23,31 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	toolConfig, err := config.ParseToolConfig(bitriseModel)
+	if err != nil {
+		panic(err)
+	}
 	toolDeclarations, err := config.ParseToolDeclarations(bitriseModel)
 	if err != nil {
 		panic(err)
+	}
+
+	var toolProvider provider.ToolProvider
+	switch toolConfig.Provider {
+	case "asdf":
+		toolProvider = asdf.AsdfToolProvider{
+			ExecEnv: execenv.ExecEnv{
+				EnvVars:   convertEnvToMap(os.Environ()),
+				ShellInit: "", // TODO
+			},
+		}
+	default:
+		panic(fmt.Errorf("unsupported tool provider: %s", toolConfig.Provider))
+	}
+
+	err = toolProvider.Bootstrap()
+	if err != nil {
+		panic(fmt.Errorf("bootstrap tool provider %s: %w", toolConfig.Provider, err))
 	}
 
 	if len(toolDeclarations) == 0 {
@@ -53,19 +75,13 @@ func main() {
 	fmt.Println()
 	fmt.Println("Installing any missing tools...")
 
-	asdfProvider := asdf.AsdfToolProvider{
-		ExecEnv: execenv.ExecEnv{
-			EnvVars:   convertEnvToMap(os.Environ()),
-			ShellInit: "", // TODO
-		},
-	}
 	var toolInstalls []provider.ToolInstallResult
 	for toolName, toolRequest := range toolDeclarations {
 		canonicalToolName := provider.GetCanonicalToolName(toolName)
 		toolRequest.ToolName = canonicalToolName
 
 		fmt.Printf("Installing %s v%s...\n", canonicalToolName, toolRequest.UnparsedVersion)
-		result, err := asdfProvider.InstallTool(toolRequest)
+		result, err := toolProvider.InstallTool(toolRequest)
 		if err != nil {
 			panic(err)
 		}
@@ -91,7 +107,7 @@ func main() {
 	}
 
 	for _, install := range toolInstalls {
-		activation, err := asdfProvider.ActivateEnv(install)
+		activation, err := toolProvider.ActivateEnv(install)
 		if err != nil {
 			panic(fmt.Errorf("activate tool %s: %w", install.ToolName, err))
 		}
