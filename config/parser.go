@@ -11,6 +11,7 @@ import (
 
 const keyExperimental = "experimental"
 const keyToolDeclarations = "tools"
+const keyToolConfig = "tool_config"
 const latestSyntaxPattern = `(.+):latest$`
 const installedSyntaxPattern = `(.+):installed$`
 
@@ -108,3 +109,45 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provi
 
 	return toolDeclarations, nil
 }
+
+func defaultToolConfig() ToolConfig {
+	return ToolConfig{
+		Provider: "asdf",
+	}
+}
+
+func ParseToolConfig(bitriseYml models.BitriseDataModel) (ToolConfig, error) {
+	if bitriseYml.Meta == nil {
+		return ToolConfig{}, fmt.Errorf("parse bitrise.yml: meta block is not defined")
+	}
+
+	metaBlock := bitriseYml.Meta[keyExperimental].(map[string]any)
+	if metaBlock == nil {
+		return ToolConfig{}, fmt.Errorf("parse bitrise.yml: meta.%s block is not defined", keyExperimental)
+	}
+
+	toolConfig := defaultToolConfig()
+
+	toolConfigBlock, exists := metaBlock[keyToolConfig]
+	if !exists {
+		return toolConfig, nil // No explicit tool config, return default
+	}
+
+	toolConfigMap, ok := toolConfigBlock.(map[string]any)
+	if !ok {
+		return ToolConfig{}, fmt.Errorf("parse bitrise.yml: meta.%s.%s block is not a map", keyExperimental, keyToolConfig)
+	}
+	if toolConfigMap == nil {
+		return toolConfig, nil
+	}
+
+	for key, value := range toolConfigMap {
+		switch key {
+		case "provider":
+			toolConfig.Provider = value.(string)
+		}
+	}
+
+	return toolConfig, nil
+}
+

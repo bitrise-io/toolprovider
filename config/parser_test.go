@@ -10,7 +10,7 @@ import (
 
 var flutterPlugin = "flutter::https://github.com/asdf-community/asdf-flutter.git"
 
-func TestParseBitriseYml(t *testing.T) {
+func TestParseTools(t *testing.T) {
 	tests := []struct {
 		name     string
 		ymlPath  string
@@ -81,6 +81,41 @@ func TestParseBitriseYml(t *testing.T) {
 					t.Fatalf("%s: expected plugin identifier %s, got %s", key, *expected.PluginIdentifier, *actual.PluginIdentifier)
 				}
 			}
+		})
+	}
+}
+
+func TestParseToolConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		ymlPath  string
+		expected config.ToolConfig
+	}{
+		{
+			name:    "No explicit config",
+			ymlPath: "testdata/valid.bitrise.yml",
+			expected: config.ToolConfig{
+				Provider: "asdf",
+			},
+		},
+		{
+			name:    "Custom tool config",
+			ymlPath: "testdata/custom_config.bitrise.yml",
+			expected: config.ToolConfig{
+				Provider: "asdf",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bitriseYml, err := config.ParseBitriseYml(tt.ymlPath)
+			assert.NoError(t, err)
+			assert.NotNil(t, bitriseYml)
+
+			toolConfig, err := config.ParseToolConfig(bitriseYml)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, toolConfig)
 		})
 	}
 }

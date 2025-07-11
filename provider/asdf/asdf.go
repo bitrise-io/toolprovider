@@ -19,7 +19,11 @@ type AsdfToolProvider struct {
 	ExecEnv execenv.ExecEnv
 }
 
-func (a *AsdfToolProvider) Bootstrap() error {
+func (a AsdfToolProvider) ID() string {
+	return "asdf"
+}
+
+func (a AsdfToolProvider) Bootstrap() error {
 	// TODO:
 	// Check if asdf is installed
 	// Check if asdf version satisfies the supported version range
@@ -27,7 +31,7 @@ func (a *AsdfToolProvider) Bootstrap() error {
 	return nil
 }
 
-func (a *AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.ToolInstallResult, error) {
+func (a AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.ToolInstallResult, error) {
 	err := a.InstallPlugin(tool)
 	if err != nil {
 		return provider.ToolInstallResult{}, fmt.Errorf("install tool plugin %s: %w", tool.ToolName, err)
