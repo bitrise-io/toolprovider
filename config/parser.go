@@ -48,15 +48,17 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provi
 	}
 
 	toolDeclarations := make(map[string]provider.ToolRequest)
-	for toolName, toolVersion := range toolBlock {
+	for toolName, toolData := range toolBlock {
 		// TODO: string or int
 		var versionString string
 		var pluginIdentifier *string
 
-		switch v := toolVersion.(type) {
+		switch v := toolData.(type) {
 		case string:
+			// If it's a string, it should be a version string only.
 			versionString = v
 		case map[string]any:
+			// If it's a map, it should contain version and optionally plugin fields.
 			ver, ok := v["version"].(string)
 			if !ok {
 				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version is not a string", keyExperimental, keyToolDeclarations, toolName)

@@ -23,15 +23,22 @@ var pluginSourceMap = map[string]PluginSource{
 	"nodejs":  {PluginName: "nodejs", GitCloneURL: "https://github.com/asdf-vm/asdf-nodejs.git"},
 }
 
+// InstallPlugin installs a plugin for the specified tool, if needed.
+//
+// It resolves the plugin source from the tool request or predefined map,
+// checks if the plugin is already installed, and if not, installs it using asdf.
 func (a *AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
-	plugin, err := resolvePluginSource(tool)
+	plugin, err := fetchPluginSource(tool)
 	if err != nil {
+		// E.g. parse error while resolving plugin source.
 		return fmt.Errorf("resolve plugin source for tool %s: %w", tool.ToolName, err)
 	}
 	if plugin == nil {
+		// No plugin source defined for this tool, nothing to install.
 		return nil
 	}
 	if plugin.PluginName == "" {
+		// Plugin name is required to install the plugin.
 		return fmt.Errorf("plugin name for tool %s is not defined", tool.ToolName)
 	}
 
@@ -44,10 +51,8 @@ func (a *AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
 		return nil
 	}
 
-	pluginAddArgs := []string{"add"}
-	if plugin.PluginName != "" {
-		pluginAddArgs = append(pluginAddArgs, plugin.PluginName)
-	}
+	pluginAddArgs := []string{"add", plugin.PluginName}
+
 	if plugin.GitCloneURL != "" {
 		pluginAddArgs = append(pluginAddArgs, plugin.GitCloneURL)
 	}
@@ -57,6 +62,7 @@ func (a *AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
 		return err
 	}
 
+	// Check if the plugin is found in the list of installed plugins after adding.
 	installed, err = a.isPluginInstalled(*plugin)
 	if err != nil {
 		return fmt.Errorf("check if plugin was installed successfully: %w", err)
@@ -74,6 +80,7 @@ func (a *AsdfToolProvider) isPluginInstalled(plugin PluginSource) (bool, error) 
 	if err != nil {
 		return false, err
 	}
+	// If no plugins are installed, asdf returns exit code 0.
 
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
@@ -89,21 +96,33 @@ func (a *AsdfToolProvider) isPluginInstalled(plugin PluginSource) (bool, error) 
 	return false, nil
 }
 
-func resolvePluginSource(tool provider.ToolRequest) (*PluginSource, error) {
-	if tool.PluginIdentifier != nil {
-		pluginInput := strings.TrimSpace(*tool.PluginIdentifier)
+func fetchPluginSource(toolRequest provider.ToolRequest) (*PluginSource, error) {
+	if toolRequest.PluginIdentifier != nil {
+		pluginInput := strings.TrimSpace(*toolRequest.PluginIdentifier)
 		if pluginInput != "" {
-			plugin, err := parsePluginSource(pluginInput)
+			// User provided a non empty plugin identifier, parse it.
+			plugin, err := parsePluginSourceFromInput(pluginInput)
 			if err != nil {
 				return nil, fmt.Errorf("parse plugin identifier %s: %w", pluginInput, err)
 			}
 			return plugin, nil
 		}
 	}
-	return getPluginSourceByName(tool.ToolName), nil
+
+	// Check if we have a predefined plugin source.
+	canonicalName := provider.GetCanonicalToolName(toolRequest.ToolName)
+	if toolPlugin, exists := pluginSourceMap[canonicalName]; exists {
+		return &toolPlugin, nil
+	}
+
+	// No predefined plugin source found and no error in plugin identifier parsing,
+	// return nil to indicate that no plugin source is defined for this tool.
+	return nil, nil
 }
 
-func parsePluginSource(pluginIdentifier string) (*PluginSource, error) {
+// parsePluginSourceFromInput parses a plugin identifier string into a PluginSource struct.
+// The expected format is "pluginName::[gitCloneURL]", where gitCloneURL is optional.
+func parsePluginSourceFromInput(pluginIdentifier string) (*PluginSource, error) {
 	parts := strings.Split(pluginIdentifier, PluginSourceSeparator)
 	if len(parts) > 2 {
 		return nil, fmt.Errorf("invalid plugin identifier format: %s, expected format is 'pluginName%s[gitCloneURL]'", pluginIdentifier, PluginSourceSeparator)
@@ -129,12 +148,4 @@ func parsePluginSource(pluginIdentifier string) (*PluginSource, error) {
 		PluginName:  pluginName,
 		GitCloneURL: pluginURL,
 	}, nil
-}
-
-func getPluginSourceByName(toolName string) *PluginSource {
-	canonicalName := provider.GetCanonicalToolName(toolName)
-	if toolPlugin, exists := pluginSourceMap[canonicalName]; exists {
-		return &toolPlugin
-	}
-	return nil
 }
