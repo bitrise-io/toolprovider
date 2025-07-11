@@ -1,0 +1,14 @@
+format_version: "17"
+
+workflows: {}
+
+meta:
+  bitrise.io:
+    stack: osx-xcode-15.0.x
+  experimental:
+    tools:
+      golang: 1.16.3
+      nodejs: 20:installed
+      ruby: 3.2:latest
+    tool_config:
+      provider: asdf

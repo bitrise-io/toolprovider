@@ -29,7 +29,7 @@ var pluginSourceMap = map[string]PluginSource{
 //
 // It resolves the plugin source from the tool request or predefined map,
 // checks if the plugin is already installed, and if not, installs it using asdf.
-func (a *AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
+func (a AsdfToolProvider) InstallPlugin(tool provider.ToolRequest) error {
 	plugin, err := fetchPluginSource(tool)
 	if err != nil {
 		// E.g. parse error while resolving plugin source.
