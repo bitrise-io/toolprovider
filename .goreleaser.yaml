@@ -1,3 +1,4 @@
+---
 version: 2
 
 before:
@@ -26,12 +27,12 @@ checksum:
 
 archives:
   # GitHub release should contain the raw binaries (no zip or tar.gz)
-- formats: binary
-  id: default
-  name_template: >-
-    {{ .ProjectName }}-
-    {{- .Os }}-
-    {{- .Arch }}
+  - formats: binary
+    id: default
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Os }}-
+      {{- .Arch }}
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next-{{ .ShortCommit }}"

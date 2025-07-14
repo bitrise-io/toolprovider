@@ -10,11 +10,13 @@ const (
 )
 
 type ToolRequest struct {
-	ToolName           string
+	ToolName string
 	// UnparsedVersion is the version string as provided by the user.
 	// It may or may not be a valid semantic version.
 	UnparsedVersion    string
 	ResolutionStrategy ResolutionStrategy
+	// PluginIdentifier is an optional identifier for the tool plugin.
+	PluginIdentifier *string
 	// TODO: PostInstall script
 }
 
@@ -24,7 +26,7 @@ type ToolInstallResult struct {
 	// ConcreteVersion is the version that was actually installed and we resolved to.
 	// It may differ from the requested version if the requested version was not a concrete version.
 	// This value may or may not be a valid semantic version.
-	ConcreteVersion    string
+	ConcreteVersion string
 }
 
 type EnvironmentActivation struct {
