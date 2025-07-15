@@ -89,8 +89,10 @@ func (a *AsdfToolProvider) isPluginInstalled(plugin PluginSource) (bool, error) 
 		if line == "" {
 			continue
 		}
-		if strings.HasPrefix(line, plugin.PluginName) &&
-			(plugin.GitCloneURL == "" || strings.Contains(line, plugin.GitCloneURL)) {
+		if strings.Contains(line, plugin.PluginName) {
+			if plugin.GitCloneURL != "" && !strings.Contains(line, plugin.GitCloneURL) {
+				return false, fmt.Errorf("plugin %s is installed, but URL does not match: %s", plugin.PluginName, line)
+			}
 			return true, nil
 		}
 	}
