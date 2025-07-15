@@ -69,7 +69,7 @@ func TestStrictResolution(t *testing.T) {
 				"1.0.1",
 				"1.1.0",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}},
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}, RequestedVersion: "2.0.0"},
 		},
 		{
 			name:             "Old Golang versioning scheme",
@@ -160,13 +160,13 @@ func TestStrictResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{
 				"openjdk-21",
 				"oracle-21",
 				"temurin-11.0.15+10",
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
-			}},
+			}, RequestedVersion: "temurin-21.0.0+39.0"},
 		},
 		{
 			name:             "Non-semver tool, requested version is semver",
@@ -184,13 +184,13 @@ func TestStrictResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{
 				"openjdk-21",
 				"oracle-21",
 				"temurin-11.0.15+10",
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
-			}},
+			}, RequestedVersion: "21.0.0"},
 		},
 	}
 
@@ -335,7 +335,7 @@ func TestLatestInstalledResolution(t *testing.T) {
 				"1.0.1",
 				"1.1.0",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}},
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}, RequestedVersion: "2.0.0"},
 		},
 		{
 			name:             "Non-semver tool, exact match with installed version",
@@ -467,13 +467,13 @@ func TestLatestInstalledResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{
 				"openjdk-21",
 				"oracle-21",
 				"temurin-11.0.15+10",
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
-			}},
+			}, RequestedVersion: "temurin-21.0.0+39.0"},
 		},
 		{
 			name:             "Non-semver tool, requested version is semver",
@@ -491,13 +491,13 @@ func TestLatestInstalledResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{
 				"openjdk-21",
 				"oracle-21",
 				"temurin-11.0.15+10",
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
-			}},
+			}, RequestedVersion: "21.0.0"},
 		},
 		{
 			name:             "Non-semver tool with prerelease versions",
@@ -691,7 +691,7 @@ func TestLatestReleasedResolution(t *testing.T) {
 				"1.0.1",
 				"1.1.0",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}},
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{"1.0.0", "1.0.1", "1.1.0"}, RequestedVersion: "2.0.0"},
 		},
 		{
 			name:             "Non-semver tool, exact match with both installed and released versions",
@@ -831,13 +831,13 @@ func TestLatestReleasedResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{AvailableVersions: []string{
+			expectedErr: &asdf.ErrNoMatchingVersion{AvailableVersions: []string{
 				"openjdk-21",
 				"oracle-21",
 				"temurin-11.0.15+10",
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
-			}},
+			}, RequestedVersion: "temurin-21.0.0+39.0"},
 		},
 		{
 			name:             "Non-semver tool, requested version is semver",
@@ -855,7 +855,7 @@ func TestLatestReleasedResolution(t *testing.T) {
 				"temurin-17.0.4+101",
 				"temurin-21.0.0+35.0.LTS",
 			},
-			expectedErr: asdf.ErrNoMatchingVersion{
+			expectedErr: &asdf.ErrNoMatchingVersion{
 				AvailableVersions: []string{
 					"openjdk-21",
 					"oracle-21",
@@ -863,6 +863,7 @@ func TestLatestReleasedResolution(t *testing.T) {
 					"temurin-17.0.4+101",
 					"temurin-21.0.0+35.0.LTS",
 				},
+				RequestedVersion: "21.0.0",
 			},
 		},
 		{
@@ -978,21 +979,29 @@ func TestErrNoMatchingVersion(t *testing.T) {
 	tests := []struct {
 		name              string
 		availableVersions []string
+		requestedVersion  string
 		expectedErr       string
 	}{
 		{
 			name:              "Zero versions available",
 			availableVersions: []string{},
-			expectedErr: "no matching version found",
+			requestedVersion:  "1.0.0",
+			expectedErr:       "no match for requested version 1.0.0",
 		},
 		{
 			name:              "Some versions available",
-			availableVersions: []string{"1.0.0", "1.0.1", "1.1.0"},
-			expectedErr: `no matching version found, available versions:
+			availableVersions: []string{"1.0.0", "1.0.1", "1.1.0", "2.0.13"},
+			requestedVersion:  "1.0",
+			expectedErr: `no match for requested version 1.0. Similar versions:
 - 1.0.0
 - 1.0.1
-- 1.1.0
 `,
+		},
+		{
+			name:              "Some versions available with no similarity",
+			availableVersions: []string{"1.0.0", "1.0.1", "1.1.0", "2.0.13"},
+			requestedVersion:  "3.0",
+			expectedErr:       `no match for requested version 3.0`,
 		},
 	}
 
