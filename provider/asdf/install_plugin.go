@@ -91,7 +91,7 @@ func (a *AsdfToolProvider) isPluginInstalled(plugin PluginSource) (bool, error) 
 		}
 		if strings.Contains(line, plugin.PluginName) {
 			if plugin.GitCloneURL != "" && !strings.Contains(line, plugin.GitCloneURL) {
-				return false, fmt.Errorf("plugin %s is installed, but URL does not match: %s", plugin.PluginName, line)
+				log.Warnf("installed, but required URL does not match current:\n%s %s\n%s", plugin.PluginName, plugin.GitCloneURL, line)
 			}
 			return true, nil
 		}
