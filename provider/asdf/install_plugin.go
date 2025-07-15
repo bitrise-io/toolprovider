@@ -19,7 +19,7 @@ type PluginSource struct {
 var pluginSourceMap = map[string]PluginSource{
 	"flutter": {PluginName: "flutter", GitCloneURL: "https://github.com/asdf-community/asdf-flutter.git"},
 	"golang":  {PluginName: "golang", GitCloneURL: "https://github.com/asdf-community/asdf-golang.git"},
-	"nodejs":  {PluginName: "nodejs", GitCloneURL: "https://github.com/asdf-community/asdf-nodejs.git"},
+	"nodejs":  {PluginName: "nodejs", GitCloneURL: "https://github.com/asdf-vm/asdf-nodejs.git"},
 	"python":  {PluginName: "python", GitCloneURL: "https://github.com/asdf-community/asdf-python.git"},
 	"ruby":    {PluginName: "ruby", GitCloneURL: "https://github.com/asdf-vm/asdf-ruby.git"},
 	"tuist":   {PluginName: "tuist", GitCloneURL: "https://github.com/tuist/asdf-tuist.git"},
