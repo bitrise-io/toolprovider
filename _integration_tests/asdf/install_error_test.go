@@ -24,8 +24,8 @@ func TestNoMatchingVersionError(t *testing.T) {
 		},
 	}
 	request := provider.ToolRequest{
-		ToolName:        "nodejs",
-		UnparsedVersion: "22",
+		ToolName:           "nodejs",
+		UnparsedVersion:    "22",
 		ResolutionStrategy: provider.ResolutionStrategyStrict,
 	}
 	_, err = asdfProvider.InstallTool(request)
@@ -38,4 +38,34 @@ func TestNoMatchingVersionError(t *testing.T) {
 	require.Contains(t, installErr.Error(), "No exact match found for 22")
 	require.Contains(t, installErr.Recommendation, "22:latest")
 	require.Contains(t, installErr.Recommendation, "22:installed")
+}
+
+func TestNewToolPluginError(t *testing.T) {
+	testEnv, err := createTestEnv(t, asdfInstallation{
+		flavor:  flavorAsdfClassic,
+		version: "0.14.0",
+		plugins: []string{"nodejs"},
+	})
+	require.NoError(t, err)
+
+	asdfProvider := asdf.AsdfToolProvider{
+		ExecEnv: execenv.ExecEnv{
+			EnvVars:   testEnv.envVars,
+			ShellInit: testEnv.shellInit,
+		},
+	}
+	request := provider.ToolRequest{
+		ToolName:           "foo",
+		UnparsedVersion:    "1.0.0",
+		ResolutionStrategy: provider.ResolutionStrategyStrict,
+	}
+	_, err = asdfProvider.InstallTool(request)
+	require.Error(t, err)
+
+	var installErr provider.ToolInstallError
+	require.ErrorAs(t, err, &installErr)
+	require.Equal(t, "foo", installErr.ToolName)
+	require.Equal(t, "1.0.0", installErr.RequestedVersion)
+	require.Equal(t, installErr.Cause, "This tool integration (foo) is not tested or vetted by Bitrise.")
+	require.Equal(t, installErr.Recommendation, "If you want to use this tool anyway, look up its asdf plugin and provide it in the `plugin` field of the tool declaration. For example: `plugin: foo::https://github/url/to/asdf/plugin/repo.git`")
 }
