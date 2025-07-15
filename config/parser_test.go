@@ -41,6 +41,11 @@ func TestParseBitriseYml(t *testing.T) {
 					ResolutionStrategy: provider.ResolutionStrategyStrict,
 					PluginIdentifier:   &flutterPlugin,
 				},
+				"python": {
+					ToolName:           "python",
+					UnparsedVersion:    "3.13",
+					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
+				},
 			},
 		},
 	}
@@ -63,8 +68,17 @@ func TestParseBitriseYml(t *testing.T) {
 				if !exists {
 					t.Fatalf("expected tool declaration for %s not found", key)
 				}
-				if actual.ToolName != expected.ToolName || actual.UnparsedVersion != expected.UnparsedVersion {
+				if actual.ToolName != expected.ToolName || actual.UnparsedVersion != expected.UnparsedVersion || actual.ResolutionStrategy != expected.ResolutionStrategy {
 					t.Fatalf("%s: expected %v, got %v", key, expected, actual)
+				}
+				if expected.PluginIdentifier != nil && actual.PluginIdentifier == nil {
+					t.Fatalf("%s: expected plugin identifier %s, got nil", key, *expected.PluginIdentifier)
+				}
+				if expected.PluginIdentifier == nil && actual.PluginIdentifier != nil {
+					t.Fatalf("%s: expected no plugin identifier, got %s", key, *actual.PluginIdentifier)
+				}
+				if expected.PluginIdentifier != nil && actual.PluginIdentifier != nil && *expected.PluginIdentifier != *actual.PluginIdentifier {
+					t.Fatalf("%s: expected plugin identifier %s, got %s", key, *expected.PluginIdentifier, *actual.PluginIdentifier)
 				}
 			}
 		})
