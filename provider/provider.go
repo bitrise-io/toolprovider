@@ -65,6 +65,8 @@ type EnvironmentActivation struct {
 }
 
 type ToolProvider interface {
+	ID() string
+
 	Bootstrap() error
 
 	InstallTool(tool ToolRequest) (ToolInstallResult, error)
