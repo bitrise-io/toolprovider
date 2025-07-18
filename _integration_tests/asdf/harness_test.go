@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 )
 
 type flavor int
@@ -49,7 +50,8 @@ func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, erro
 
 	testingEnv := testEnv{
 		envVars: map[string]string{
-			"PATH": fmt.Sprintf("%s:%s:%s", installDir, shimsDir, os.Getenv("PATH")),
+			// We intentionally clear up $PATH to avoid the system-wide path influencing tests
+			"PATH": fmt.Sprintf("%s:%s:/bin:/usr/bin", installDir, shimsDir),
 			// ASDF_DATA_DIR is where plugins and tool versions are installed (not to be confused with ASDF_DIR)
 			"ASDF_DATA_DIR":    dataDir,
 			"ASDF_CONFIG_FILE": filepath.Join(dataDir, ".asdfrc"),
@@ -74,6 +76,14 @@ func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, erro
 	}
 
 	return testingEnv, nil
+}
+
+func (te *testEnv) toExecEnv() execenv.ExecEnv {
+	return execenv.ExecEnv{
+		EnvVars:            te.envVars,
+		ClearInheritedEnvs: true,
+		ShellInit:          te.shellInit,
+	}
 }
 
 func (te *testEnv) runAsdf(args ...string) (string, error) {

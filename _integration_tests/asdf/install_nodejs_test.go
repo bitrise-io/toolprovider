@@ -5,7 +5,6 @@ import (
 
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/provider/asdf"
-	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +16,7 @@ func TestAsdfInstallNodeVersion(t *testing.T) {
 		expectedVersion    string
 	}{
 		{"Install specific version", "18.16.0", provider.ResolutionStrategyStrict, "18.16.0"},
-		{"Install partial major version", "20", provider.ResolutionStrategyLatestInstalled, "20.19.3"},
+		{"Install partial major version", "18", provider.ResolutionStrategyLatestInstalled, "18.20.8"},
 		{"Install partial major.minor version", "18.10", provider.ResolutionStrategyLatestReleased, "18.10.0"},
 	}
 
@@ -30,10 +29,7 @@ func TestAsdfInstallNodeVersion(t *testing.T) {
 		require.NoError(t, err)
 
 		asdfProvider := asdf.AsdfToolProvider{
-			ExecEnv: execenv.ExecEnv{
-				EnvVars:   testEnv.envVars,
-				ShellInit: testEnv.shellInit,
-			},
+			ExecEnv: testEnv.toExecEnv(),
 		}
 		t.Run(tt.name, func(t *testing.T) {
 			request := provider.ToolRequest{
@@ -59,10 +55,7 @@ func TestCorepackWithNewNodeInstall(t *testing.T) {
 	require.NoError(t, err)
 
 	asdfProvider := asdf.AsdfToolProvider{
-		ExecEnv: execenv.ExecEnv{
-			EnvVars:   testEnv.envVars,
-			ShellInit: testEnv.shellInit,
-		},
+		ExecEnv: testEnv.toExecEnv(),
 	}
 	request := provider.ToolRequest{
 		ToolName:        "nodejs",

@@ -15,6 +15,9 @@ type ExecEnv struct {
 	// Env vars that confiure asdf and are required for its operation.
 	EnvVars map[string]string
 
+	// When set to true, env vars inherited from the parent process are cleared for maximum isolation.
+	ClearInheritedEnvs bool
+
 	// ShellInit is a shell command that initializes asdf in the shell session.
 	// This is required because classic asdf is written in bash and we can't assume that
 	// its init command is sourced in .bashrc or similar (and we don't want to modify
@@ -43,7 +46,9 @@ func (e *ExecEnv) RunCommand(extraEnvs map[string]string, args ...string) (strin
 	// relies on shell features.
 	bashArgs := []string{"-c", strings.Join(innerShellCmd, " ")}
 	bashCmd := exec.Command("bash", bashArgs...)
-	bashCmd.Env = os.Environ()
+	if !e.ClearInheritedEnvs {
+		bashCmd.Env = os.Environ()
+	}
 	for k, v := range e.EnvVars {
 		bashCmd.Env = append(bashCmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
