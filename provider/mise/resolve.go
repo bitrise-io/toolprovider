@@ -3,7 +3,6 @@ package mise
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/bitrise-io/toolprovider/provider"
@@ -29,8 +28,7 @@ func (m *MiseToolProvider) resolveToConcreteVersionAfterInstall(tool provider.To
 
 func (m *MiseToolProvider) resolveToLatestReleased(toolName string, version string) (string, error) {
 	// Even if version is empty string "sometool@" will not cause an error.
-	cmd := exec.Command("mise", "latest", fmt.Sprintf("%s@%s", toolName, version))
-	output, err := cmd.CombinedOutput()
+	output, err := m.ExecEnv.RunMise("latest", fmt.Sprintf("%s@%s", toolName, version))
 	if err != nil {
 		return "", fmt.Errorf("mise latest %s@%s: %w", toolName, version, err)
 	}
@@ -45,8 +43,7 @@ func (m *MiseToolProvider) resolveToLatestReleased(toolName string, version stri
 
 func (m *MiseToolProvider) resolveToLatestInstalled(toolName string, version string) (string, error) {
 	// Even if version is empty string "sometool@" will not cause an error.
-	cmd := exec.Command("mise", "latest", "--installed", fmt.Sprintf("%s@%s", toolName, version))
-	output, err := cmd.CombinedOutput()
+	output, err := m.ExecEnv.RunMise("latest", "--installed", fmt.Sprintf("%s@%s", toolName, version))
 	if err != nil {
 		return "", fmt.Errorf("mise latest --installed %s@%s: %w", toolName, version, err)
 	}

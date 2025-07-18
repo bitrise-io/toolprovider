@@ -16,12 +16,19 @@ func TestMiseInstallNodeVersion(t *testing.T) {
 		expectedVersion    string
 	}{
 		{"Install specific version", "18.16.0", provider.ResolutionStrategyStrict, "18.16.0"},
-		{"Install partial major version", "20", provider.ResolutionStrategyLatestInstalled, "20.19.3"},
+		{"Install partial major version", "18", provider.ResolutionStrategyLatestInstalled, "18.20.8"},
 		{"Install partial major.minor version", "18.10", provider.ResolutionStrategyLatestReleased, "18.10.0"},
 	}
 
 	for _, tt := range tests {
-		miseProvider := mise.MiseToolProvider{}
+		miseInstallDir := t.TempDir()
+		miseDataDir := t.TempDir()
+		miseProvider, err := mise.NewToolProvider(miseInstallDir, miseDataDir)
+		require.NoError(t, err)
+
+		err = miseProvider.Bootstrap()
+		require.NoError(t, err)
+
 		t.Run(tt.name, func(t *testing.T) {
 			request := provider.ToolRequest{
 				ToolName:           "nodejs",

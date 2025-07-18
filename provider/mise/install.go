@@ -3,7 +3,6 @@ package mise
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 
 	"github.com/bitrise-io/toolprovider/provider"
 )
@@ -14,13 +13,12 @@ func (m *MiseToolProvider) installToolVersion(tool provider.ToolRequest) error {
 		return err
 	}
 
-	cmd := exec.Command("mise", "install", "--yes", versionString)
-	output, err := cmd.CombinedOutput()
+	output, err := m.ExecEnv.RunMise("install", "--yes", versionString)
 	if err != nil {
 		return provider.ToolInstallError{
 			ToolName:         tool.ToolName,
 			RequestedVersion: versionString,
-			Cause:            fmt.Sprintf("mise install %s@%s: %s", tool.ToolName, versionString, err),
+			Cause:            fmt.Sprintf("mise install %s: %s", versionString, err),
 			RawOutput:        string(output),
 		}
 	}
