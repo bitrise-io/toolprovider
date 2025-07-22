@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/provider/asdf"
 	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
+	"github.com/bitrise-io/toolprovider/provider/mise"
 )
 
 func main() {
@@ -41,6 +42,8 @@ func main() {
 				ShellInit: "", // TODO
 			},
 		}
+	case "mise":
+		toolProvider = &mise.MiseToolProvider{}
 	default:
 		panic(fmt.Errorf("unsupported tool provider: %s", toolConfig.Provider))
 	}
