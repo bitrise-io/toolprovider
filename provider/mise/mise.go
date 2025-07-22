@@ -48,6 +48,9 @@ func (m *MiseToolProvider) ID() string {
 }
 
 func (m *MiseToolProvider) Bootstrap() error {
+	fmt.Printf("Installing Mise %s...", miseVersion)
+	fmt.Println()
+
 	err := installReleaseBinary(miseVersion, m.ExecEnv.InstallDir)
 	if err != nil {
 		return fmt.Errorf("bootstrap mise: %w", err)
