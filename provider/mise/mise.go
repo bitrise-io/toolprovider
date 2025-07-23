@@ -7,14 +7,11 @@ import (
 )
 
 type MiseToolProvider struct {
-
 }
-
 
 func (m *MiseToolProvider) ID() string {
 	return "mise"
 }
-
 
 func (m *MiseToolProvider) Bootstrap() error {
 	// TODO
@@ -38,13 +35,17 @@ func (m *MiseToolProvider) InstallTool(tool provider.ToolRequest) (provider.Tool
 	}
 
 	return provider.ToolInstallResult{
-		ToolName:        tool.ToolName,
+		ToolName:           tool.ToolName,
 		IsAlreadyInstalled: isAlreadyInstalled,
-		ConcreteVersion: concreteVersion,
+		ConcreteVersion:    concreteVersion,
 	}, nil
 }
 
 func (m *MiseToolProvider) ActivateEnv(result provider.ToolInstallResult) (provider.EnvironmentActivation, error) {
-	// TODO
-	return provider.EnvironmentActivation{}, nil
+	envs, err := m.envVarsForTool(result)
+	if err != nil {
+		return provider.EnvironmentActivation{}, fmt.Errorf("get mise env: %w", err)
+	}
+
+	return processEnvOutput(envs), nil
 }

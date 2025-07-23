@@ -59,6 +59,8 @@ func (e ToolInstallError) Error() string {
 	return msg
 }
 
+// TODO: Mise merges envs and $PATH changes into one output, maybe we should do the same for asdf?
+// It would simplify the activation process.
 type EnvironmentActivation struct {
 	ContributedEnvVars map[string]string
 	ContributedPaths   []string
