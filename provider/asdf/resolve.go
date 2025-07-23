@@ -29,7 +29,7 @@ func (e ErrNoMatchingVersion) Error() string {
 	if versionList == "" {
 		return fmt.Sprintf("no match for requested version %s", e.RequestedVersion)
 	} else {
-		return fmt.Sprintf("no match for %s. Similar versions: \n%s", e.RequestedVersion, versionList)
+		return fmt.Sprintf("no match for requested version %s. Similar versions: \n%s", e.RequestedVersion, versionList)
 	}
 }
 

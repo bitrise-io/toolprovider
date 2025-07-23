@@ -5,7 +5,6 @@ import (
 
 	"github.com/bitrise-io/toolprovider/provider"
 	"github.com/bitrise-io/toolprovider/provider/asdf"
-	"github.com/bitrise-io/toolprovider/provider/asdf/execenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,10 +28,7 @@ func TestAsdfInstallFlutterNoPlugin(t *testing.T) {
 		require.NoError(t, err)
 
 		asdfProvider := asdf.AsdfToolProvider{
-			ExecEnv: execenv.ExecEnv{
-				EnvVars:   testEnv.envVars,
-				ShellInit: testEnv.shellInit,
-			},
+			ExecEnv: testEnv.toExecEnv(),
 		}
 		t.Run(tt.name, func(t *testing.T) {
 			request := provider.ToolRequest{
