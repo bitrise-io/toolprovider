@@ -168,7 +168,7 @@ func assignSpecialCaseResolutionStrategy(
 }
 
 // resolveLatestVersion resolves "latest" to the actual latest version based on the resolution strategy
-func resolveLatestVersion(
+func resolveToAbsoluteLatestVersion(
 	request provider.ToolRequest,
 	releasedVersions []string,
 	installedVersions []string,
