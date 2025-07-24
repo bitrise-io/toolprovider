@@ -11,7 +11,7 @@ import (
 )
 
 type ErrNoMatchingVersion struct {
-	RequestedVersion string
+	RequestedVersion  string
 	AvailableVersions []string
 }
 
@@ -45,6 +45,11 @@ func ResolveVersion(
 	releasedVersions []string,
 	installedVersions []string,
 ) (VersionResolution, error) {
+	// If the requested version is "latest", resolve it to the actual latest version based on the resolution strategy
+	if request.UnparsedVersion == "latest" {
+		return resolveLatestVersion(request, releasedVersions, installedVersions)
+	}
+
 	// Short-circuit for exact version match among installed versions
 	if slices.Contains(installedVersions, strings.TrimSpace(request.UnparsedVersion)) {
 		requestedSemVer, err := version.NewVersion(request.UnparsedVersion)
@@ -132,6 +137,51 @@ func ResolveVersion(
 	}
 
 	return VersionResolution{}, fmt.Errorf("unknown resolution strategy: %v", request.ResolutionStrategy)
+}
+
+// resolveLatestVersion resolves "latest" to the actual latest version based on the resolution strategy
+func resolveLatestVersion(
+	request provider.ToolRequest,
+	releasedVersions []string,
+	installedVersions []string,
+) (VersionResolution, error) {
+	switch request.ResolutionStrategy {
+	case provider.ResolutionStrategyLatestInstalled:
+		// Fetch latest installed version
+		sortedInstalledVersions := logicallySortedVersions(installedVersions)
+		latestInstalled := sortedInstalledVersions[0]
+		if latestInstalled == "" {
+			return VersionResolution{}, &ErrNoMatchingVersion{
+				AvailableVersions: installedVersions,
+				RequestedVersion:  "latest",
+			}
+		}
+		semverV, err := version.NewVersion(latestInstalled)
+		return VersionResolution{
+			VersionString: latestInstalled,
+			IsSemVer:      err == nil,
+			SemVer:        semverV,
+			IsInstalled:   true,
+		}, nil
+	default:
+		// Fetch latest released version
+		sortedReleasedVersions := logicallySortedVersions(releasedVersions)
+		latestReleased := sortedReleasedVersions[0]
+		if latestReleased == "" {
+			return VersionResolution{}, &ErrNoMatchingVersion{
+				AvailableVersions: releasedVersions,
+				RequestedVersion:  "latest",
+			}
+		}
+		isInstalled := slices.Contains(installedVersions, latestReleased)
+		semverV, err := version.NewVersion(latestReleased)
+		return VersionResolution{
+			VersionString: latestReleased,
+			IsSemVer:      err == nil,
+			SemVer:        semverV,
+			IsInstalled:   isInstalled,
+		}, nil
+	}
 }
 
 // logicallySortedVersions reverse-sorts the given versions in a way that semver-compatible versions are sorted according to the semver spec,

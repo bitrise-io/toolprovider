@@ -566,6 +566,29 @@ func TestLatestInstalledResolution(t *testing.T) {
 				IsInstalled:   false,
 			},
 		},
+		{
+			name:             "latest installed version requested",
+			requestedVersion: "latest",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "temurin-17.0.4+101",
+				IsSemVer:      false,
+				SemVer:        nil,
+				IsInstalled:   true,
+			},
+		},
 	}
 
 	runVersionResolutionTests(t, tests, provider.ResolutionStrategyLatestInstalled)
@@ -931,6 +954,29 @@ func TestLatestReleasedResolution(t *testing.T) {
 				VersionString: "3.24.5-prerelease.rc5",
 				IsSemVer:      true,
 				SemVer:        version.Must(version.NewVersion("3.24.5-prerelease.rc5")),
+				IsInstalled:   false,
+			},
+		},
+		{
+			name:             "latest released version requested",
+			requestedVersion: "latest",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "temurin-21.0.0+35.0.LTS",
+				IsSemVer:      false,
+				SemVer:        nil,
 				IsInstalled:   false,
 			},
 		},
