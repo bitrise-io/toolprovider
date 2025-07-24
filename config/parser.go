@@ -13,8 +13,8 @@ import (
 const keyExperimental = "experimental"
 const keyToolDeclarations = "tools"
 const keyToolConfig = "tool_config"
-const latestSyntaxPattern = `(.+|):latest$`
-const installedSyntaxPattern = `(.+|):installed$`
+const latestSyntaxPattern = `(.*):latest$`
+const installedSyntaxPattern = `(.*):installed$`
 
 func ParseBitriseYml(path string) (models.BitriseDataModel, error) {
 	model, _, err := bitrise.ReadBitriseConfig(path, bitrise.ValidationTypeMinimal)
