@@ -18,7 +18,8 @@ func TestAsdfInstallGolangVersion(t *testing.T) {
 		{"Install specific version", "1.23.4", provider.ResolutionStrategyStrict, "1.23.4"},
 		{"Install partial major.minor version", "1.22", provider.ResolutionStrategyLatestInstalled, "1.22.12"},
 		{"Install partial major.minor version, latest released", "1.22", provider.ResolutionStrategyLatestReleased, "1.22.12"},
-		{"Install latest version, latest released", "latest", provider.ResolutionStrategyLatestReleased, "1.25rc2"},
+		// Latest version will be downloaded if user skips the version.
+		{"Install latest version, latest released", "", provider.ResolutionStrategyLatestReleased, "1.25rc2"},
 	}
 
 	for _, tt := range tests {

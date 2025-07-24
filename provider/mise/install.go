@@ -49,7 +49,12 @@ func isAlreadyInstalled(tool provider.ToolRequest, latestInstalledResolver lates
 
 func miseVersionString(tool provider.ToolRequest, latestInstalledResolver latestInstalledResolver) (string, error) {
 	var miseVersionString string
-	switch tool.ResolutionStrategy {
+	resolutionStrategy := tool.ResolutionStrategy
+	if tool.UnparsedVersion == "installed" {
+		resolutionStrategy = provider.ResolutionStrategyLatestInstalled
+	}
+
+	switch resolutionStrategy {
 	case provider.ResolutionStrategyStrict:
 		miseVersionString = fmt.Sprintf("%s@%s", tool.ToolName, tool.UnparsedVersion)
 	case provider.ResolutionStrategyLatestReleased:

@@ -16,3 +16,14 @@ meta:
         version: 3.32.5-stable
         plugin: flutter::https://github.com/asdf-community/asdf-flutter.git
       python: "3.13:installed"
+      tuist:
+        version: ":latest"  # Should install latest released.
+      alias:
+        version: "latest"  # Should install latest released.
+        plugin: alias::https://github.com/andrewthauer/asdf-alias.git
+      signal-cli: {}  # Should install latest released.
+      air:
+        version: "installed"  # Should install latest installed.
+        plugin: air::https://github.com/pdemagny/asdf-air
+      elixir:
+        version: ":installed"  # Should install latest installed.

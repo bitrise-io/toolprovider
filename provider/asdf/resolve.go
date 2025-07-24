@@ -10,6 +10,16 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
+// Special cases are versions that do not follow the usual versioning scheme.
+// These are typically used to request the latest released or installed version.
+var specialCases = []string{
+	// If user did not provide a version before the colon, i.e. ":latest" or "".
+	"",
+	// If user did provide a version, but it is a keyword instead of a version, i.e. "latest:installed" or "installed".
+	"latest",
+	"installed",
+}
+
 type ErrNoMatchingVersion struct {
 	RequestedVersion  string
 	AvailableVersions []string
@@ -45,8 +55,8 @@ func ResolveVersion(
 	releasedVersions []string,
 	installedVersions []string,
 ) (VersionResolution, error) {
-	// If the requested version is "latest", resolve it to the actual latest version based on the resolution strategy
-	if request.UnparsedVersion == "latest" {
+	if slices.Contains(specialCases, request.UnparsedVersion) {
+		// If the version is a special case, we assign the resolution strategy accordingly.
 		return resolveLatestVersion(request, releasedVersions, installedVersions)
 	}
 
@@ -139,13 +149,34 @@ func ResolveVersion(
 	return VersionResolution{}, fmt.Errorf("unknown resolution strategy: %v", request.ResolutionStrategy)
 }
 
+// assignSpecialCaseResolutionStrategy assigns a resolution strategy other than strict based on the request's unparsed version and provided strategy.
+func assignSpecialCaseResolutionStrategy(
+	request provider.ToolRequest,
+) provider.ResolutionStrategy {
+	if request.ResolutionStrategy != provider.ResolutionStrategyStrict {
+		// Already has a resolution strategy set with an input like ":latest" or "latest:installed".
+		return request.ResolutionStrategy
+	}
+
+	if request.UnparsedVersion == "installed" {
+		// No resolution strategy was set, but the version is special case "installed".
+		return provider.ResolutionStrategyLatestInstalled
+	}
+
+	// If the resolution strategy was not set or version is "latest", we assume the user wants the latest released version.
+	return provider.ResolutionStrategyLatestReleased
+}
+
 // resolveLatestVersion resolves "latest" to the actual latest version based on the resolution strategy
 func resolveLatestVersion(
 	request provider.ToolRequest,
 	releasedVersions []string,
 	installedVersions []string,
 ) (VersionResolution, error) {
-	switch request.ResolutionStrategy {
+	// In special cases the resolution strategy should always be set to other than strict before proceeding.
+	resolutionStrategy := assignSpecialCaseResolutionStrategy(request)
+
+	switch resolutionStrategy {
 	case provider.ResolutionStrategyLatestInstalled:
 		// Fetch latest installed version
 		sortedInstalledVersions := logicallySortedVersions(installedVersions)
@@ -153,7 +184,7 @@ func resolveLatestVersion(
 		if latestInstalled == "" {
 			return VersionResolution{}, &ErrNoMatchingVersion{
 				AvailableVersions: installedVersions,
-				RequestedVersion:  "latest",
+				RequestedVersion:  "installed",
 			}
 		}
 		semverV, err := version.NewVersion(latestInstalled)
@@ -163,7 +194,7 @@ func resolveLatestVersion(
 			SemVer:        semverV,
 			IsInstalled:   true,
 		}, nil
-	default:
+	case provider.ResolutionStrategyLatestReleased:
 		// Fetch latest released version
 		sortedReleasedVersions := logicallySortedVersions(releasedVersions)
 		latestReleased := sortedReleasedVersions[0]
@@ -181,6 +212,8 @@ func resolveLatestVersion(
 			SemVer:        semverV,
 			IsInstalled:   isInstalled,
 		}, nil
+	default:
+		return VersionResolution{}, fmt.Errorf("could not resolve resolution strategy for version %v", request.UnparsedVersion)
 	}
 }
 
