@@ -192,6 +192,75 @@ func TestStrictResolution(t *testing.T) {
 				"temurin-21.0.0+35.0.LTS",
 			}, RequestedVersion: "21.0.0"},
 		},
+		{
+			name:             "latest installed version requested",
+			requestedVersion: "installed",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "temurin-17.0.4+101",
+				IsSemVer:      false,
+				SemVer:        nil,
+				IsInstalled:   true,
+			},
+		},
+		{
+			name:             "latest released version requested",
+			requestedVersion: "latest",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "temurin-21.0.0+35.0.LTS",
+				IsSemVer:      false,
+				SemVer:        nil,
+				IsInstalled:   false,
+			},
+		},
+		{
+			name:             "latest released version requested with empty version field",
+			requestedVersion: "",
+			installedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+			},
+			releasedVersions: []string{
+				"openjdk-21",
+				"oracle-21",
+				"temurin-11.0.15+10",
+				"temurin-17.0.4+101",
+				"temurin-21.0.0+35.0.LTS",
+			},
+			expectedResolution: asdf.VersionResolution{
+				VersionString: "temurin-21.0.0+35.0.LTS",
+				IsSemVer:      false,
+				SemVer:        nil,
+				IsInstalled:   false,
+			},
+		},
 	}
 
 	runVersionResolutionTests(t, tests, provider.ResolutionStrategyStrict)

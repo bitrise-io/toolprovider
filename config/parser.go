@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/bitrise-io/bitrise/v2/bitrise"
 	"github.com/bitrise-io/bitrise/v2/models"
@@ -12,8 +13,8 @@ import (
 const keyExperimental = "experimental"
 const keyToolDeclarations = "tools"
 const keyToolConfig = "tool_config"
-const latestSyntaxPattern = `(.+):latest$`
-const installedSyntaxPattern = `(.+):installed$`
+const latestSyntaxPattern = `(.*):latest$`
+const installedSyntaxPattern = `(.*):installed$`
 
 func ParseBitriseYml(path string) (models.BitriseDataModel, error) {
 	model, _, err := bitrise.ReadBitriseConfig(path, bitrise.ValidationTypeMinimal)
@@ -57,14 +58,19 @@ func ParseToolDeclarations(bitriseYml models.BitriseDataModel) (map[string]provi
 		switch v := toolData.(type) {
 		case string:
 			// If it's a string, it should be a version string only.
-			versionString = v
+			versionString = strings.TrimSpace(v)
 		case map[string]any:
 			// If it's a map, it should contain version and optionally plugin fields.
 			ver, ok := v["version"].(string)
 			if !ok {
-				return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version is not a string", keyExperimental, keyToolDeclarations, toolName)
+				if v["version"] == nil {
+					// User aims to provide the shortest form, skipping version field, so we decide later what to do with no version.
+					ver = ""
+				} else {
+					return nil, fmt.Errorf("parse bitrise.yml: meta.%s.%s.%s.version is not a string", keyExperimental, keyToolDeclarations, toolName)
+				}
 			}
-			versionString = ver
+			versionString = strings.TrimSpace(ver)
 			if pluginVal, ok := v["plugin"]; ok && pluginVal != nil {
 				pluginStr, ok := pluginVal.(string)
 				if !ok {
@@ -150,4 +156,3 @@ func ParseToolConfig(bitriseYml models.BitriseDataModel) (ToolConfig, error) {
 
 	return toolConfig, nil
 }
-

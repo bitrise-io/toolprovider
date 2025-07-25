@@ -123,8 +123,7 @@ func fetchPluginSource(toolRequest provider.ToolRequest) (*PluginSource, error) 
 	}
 
 	// Check if we have a predefined plugin source.
-	canonicalName := provider.GetCanonicalToolName(toolRequest.ToolName)
-	if toolPlugin, exists := pluginSourceMap[canonicalName]; exists {
+	if toolPlugin, exists := pluginSourceMap[toolRequest.ToolName]; exists {
 		return &toolPlugin, nil
 	}
 

@@ -58,6 +58,13 @@ func (a AsdfToolProvider) InstallTool(tool provider.ToolRequest) (provider.ToolI
 		return provider.ToolInstallResult{}, fmt.Errorf("list released versions: %w", err)
 	}
 
+	if len(releasedVersions) == 0 && len(installedVersions) == 0 {
+		return provider.ToolInstallResult{}, &ErrNoMatchingVersion{
+			RequestedVersion:  tool.UnparsedVersion,
+			AvailableVersions: releasedVersions,
+		}
+	}
+
 	resolution, err := ResolveVersion(tool, releasedVersions, installedVersions)
 	if err != nil {
 		var nomatchErr *ErrNoMatchingVersion

@@ -8,9 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var flutterPlugin = "flutter::https://github.com/asdf-community/asdf-flutter.git"
-
 func TestParseTools(t *testing.T) {
+	var flutterPlugin = "flutter::https://github.com/asdf-community/asdf-flutter.git"
+	var airPlugin = "air::https://github.com/pdemagny/asdf-air"
+	var aliasPlugin = "alias::https://github.com/andrewthauer/asdf-alias.git"
+
 	tests := []struct {
 		name     string
 		ymlPath  string
@@ -44,6 +46,33 @@ func TestParseTools(t *testing.T) {
 				"python": {
 					ToolName:           "python",
 					UnparsedVersion:    "3.13",
+					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
+				},
+				"tuist": {
+					ToolName:           "tuist",
+					UnparsedVersion:    "",
+					ResolutionStrategy: provider.ResolutionStrategyLatestReleased,
+				},
+				"alias": {
+					ToolName:           "alias",
+					UnparsedVersion:    "latest",
+					ResolutionStrategy: provider.ResolutionStrategyStrict,
+					PluginIdentifier:   &aliasPlugin,
+				},
+				"signal-cli": {
+					ToolName:           "signal-cli",
+					UnparsedVersion:    "",
+					ResolutionStrategy: provider.ResolutionStrategyStrict,
+				},
+				"air": {
+					ToolName:           "air",
+					UnparsedVersion:    "installed",
+					ResolutionStrategy: provider.ResolutionStrategyStrict,
+					PluginIdentifier:   &airPlugin,
+				},
+				"elixir": {
+					ToolName:           "elixir",
+					UnparsedVersion:    "",
 					ResolutionStrategy: provider.ResolutionStrategyLatestInstalled,
 				},
 			},

@@ -28,6 +28,7 @@ func (m *MiseToolProvider) resolveToConcreteVersionAfterInstall(tool provider.To
 }
 
 func (m *MiseToolProvider) resolveToLatestReleased(toolName string, version string) (string, error) {
+	// Even if version is empty string "sometool@" will not cause an error.
 	cmd := exec.Command("mise", "latest", fmt.Sprintf("%s@%s", toolName, version))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -43,6 +44,7 @@ func (m *MiseToolProvider) resolveToLatestReleased(toolName string, version stri
 }
 
 func (m *MiseToolProvider) resolveToLatestInstalled(toolName string, version string) (string, error) {
+	// Even if version is empty string "sometool@" will not cause an error.
 	cmd := exec.Command("mise", "latest", "--installed", fmt.Sprintf("%s@%s", toolName, version))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
