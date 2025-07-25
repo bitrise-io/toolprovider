@@ -57,7 +57,7 @@ func ResolveVersion(
 ) (VersionResolution, error) {
 	if slices.Contains(specialCases, request.UnparsedVersion) {
 		// If the version is a special case, we assign the resolution strategy accordingly.
-		return resolveLatestVersion(request, releasedVersions, installedVersions)
+		return resolveToAbsoluteLatestVersion(request, releasedVersions, installedVersions)
 	}
 
 	// Short-circuit for exact version match among installed versions
