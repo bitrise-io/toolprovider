@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/toolprovider/config"
@@ -145,12 +146,7 @@ func extendEnvmanEnv(activation provider.EnvironmentActivation) error {
 	}
 
 	if len(activation.ContributedPaths) > 0 {
-		newPath := os.Getenv("PATH")
-		for _, p := range activation.ContributedPaths {
-			if !strings.Contains(newPath, p) {
-				newPath = fmt.Sprintf("%s:%s", p, newPath)
-			}
-		}
+		newPath := prependPath(os.Getenv("PATH"), strings.Join(activation.ContributedPaths, ":"))
 		cmd := exec.Command("envman", "add", "--key", "PATH", "--value", newPath)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			fmt.Println(string(out))
@@ -158,4 +154,21 @@ func extendEnvmanEnv(activation provider.EnvironmentActivation) error {
 		}
 	}
 	return nil
+}
+
+func prependPath(pathEnv, newPath string) string {
+	if pathEnv == "" {
+		return newPath
+	}
+
+	pathItems := strings.Split(pathEnv, ":")
+	pathItems = slices.DeleteFunc(pathItems, func(p string) bool {
+		return p == newPath
+	})
+
+	if len(pathItems) == 0 {
+		return newPath
+	}
+
+	return fmt.Sprintf("%s:%s", newPath, strings.Join(pathItems, ":"))
 }
