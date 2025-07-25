@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strings"
 
@@ -19,14 +18,13 @@ type envOutput map[string]string
 // a shell environment. This includes $PATH additions and other env vars, such as $JAVA_HOME, $GOROOT, etc.
 func (m *MiseToolProvider) envVarsForTool(installResult provider.ToolInstallResult) (envOutput, error) {
 	// Note: --quiet hides warnings and other plain text lines that would break JSON parsing.
-	envCmd := exec.Command("mise", "env", "--quiet", "--json", fmt.Sprintf("%s@%s", installResult.ToolName, installResult.ConcreteVersion))
-	data, err := envCmd.CombinedOutput()
+	data, err := m.ExecEnv.RunMise("env", "--quiet", "--json", fmt.Sprintf("%s@%s", installResult.ToolName, installResult.ConcreteVersion))
 	if err != nil {
 		return envOutput{}, fmt.Errorf("mise env %s@%s: %w", installResult.ToolName, installResult.ConcreteVersion, err)
 	}
 
 	var env envOutput
-	err = json.Unmarshal(data, &env)
+	err = json.Unmarshal([]byte(data), &env)
 	if err != nil {
 		return envOutput{}, fmt.Errorf("parse mise env output: %w\n%s", err, string(data))
 	}

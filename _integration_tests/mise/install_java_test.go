@@ -29,20 +29,27 @@ func TestMiseInstallJavaVersion(t *testing.T) {
 		},
 		{
 			name:               "Temurin major version only",
-			requestedVersion:   "temurin-21",
+			requestedVersion:   "temurin-22",
 			resolutionStrategy: provider.ResolutionStrategyLatestReleased,
-			expectedVersion:    "temurin-21.0.7+6.0.LTS",
+			expectedVersion:    "temurin-22.0.2+9",
 		},
 		{
 			name:               "Temurin exact version",
-			requestedVersion:   "temurin-17.0.8+101",
+			requestedVersion:   "temurin-18.0.2+9",
 			resolutionStrategy: provider.ResolutionStrategyStrict,
-			expectedVersion:    "temurin-17.0.8+101",
+			expectedVersion:    "temurin-18.0.2+9",
 		},
 	}
 
 	for _, tt := range tests {
-		miseProvider := mise.MiseToolProvider{}
+		miseInstallDir := t.TempDir()
+		miseDataDir := t.TempDir()
+		miseProvider, err := mise.NewToolProvider(miseInstallDir, miseDataDir)
+		require.NoError(t, err)
+
+		err = miseProvider.Bootstrap()
+		require.NoError(t, err)
+
 		t.Run(tt.name, func(t *testing.T) {
 			request := provider.ToolRequest{
 				ToolName:           "java",
