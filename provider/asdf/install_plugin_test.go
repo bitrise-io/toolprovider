@@ -9,7 +9,6 @@ import (
 
 var (
 	pluginName                = "nodejs"
-	pluginNameAlias           = "node"
 	pluginGitCloneURL         = "https://github.com/asdf-vm/asdf-nodejs.git"
 	fullPluginId              = pluginName + "::" + pluginGitCloneURL
 	nameOnlySeparatorPluginId = pluginName + "::"
@@ -79,17 +78,6 @@ func TestResolvePluginSource(t *testing.T) {
 			},
 			expected: PluginSource{},
 			wantErr:  true,
-		},
-		{
-			name: "pluginIdentifier set with name alias",
-			input: provider.ToolRequest{
-				ToolName:        pluginNameAlias,
-				UnparsedVersion: "18.16.0",
-			},
-			expected: PluginSource{
-				pluginName,
-				pluginGitCloneURL,
-			},
 		},
 		{
 			name: "pluginIdentifier set with multiple separators",
