@@ -38,7 +38,7 @@ func (m *MiseToolProvider) resolveToLatestReleased(toolName string, version stri
 		return "", errNoMatchingVersion
 	}
 
-	return strings.TrimSpace(string(output)), nil
+	return v, nil
 }
 
 func (m *MiseToolProvider) resolveToLatestInstalled(toolName string, version string) (string, error) {

@@ -44,7 +44,18 @@ func main() {
 			},
 		}
 	case "mise":
-		toolProvider = &mise.MiseToolProvider{}
+		// TODO: this is just temporary until we merge this repo into the CLI codebase
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Errorf("get user home dir: %w", err))
+		}
+		installDir := filepath.Join(home, ".bitrise", "tools", "mise")
+		dataDir := filepath.Join(home, ".bitrise", "tools", "mise-data")
+		p, err := mise.NewToolProvider(installDir, dataDir)
+		if err != nil {
+			panic(fmt.Errorf("create Mise tool provider: %w", err))
+		}
+		toolProvider = p
 	default:
 		panic(fmt.Errorf("unsupported tool provider: %s", toolConfig.Provider))
 	}
