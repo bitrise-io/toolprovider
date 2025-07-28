@@ -1,12 +1,46 @@
 package mise
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/bitrise-io/toolprovider/provider"
+	"github.com/bitrise-io/toolprovider/provider/mise/execenv"
 )
 
+// We pin one Mise version because:
+// - Mise doesn't follow SemVer, there are breaking changes in regular releases sometimes
+// - We depend on the exact layout of the release .tar.gz archive in Bootstrap(), this is probably not stable
+const miseVersion = "v2025.7.18"
+
 type MiseToolProvider struct {
+	ExecEnv execenv.ExecEnv
+}
+
+func NewToolProvider(installDir string, dataDir string) (*MiseToolProvider, error) {
+	if installDir == "" {
+		return nil, errors.New("install directory must be provided")
+	}
+	if dataDir == "" {
+		return nil, errors.New("data directory must be provided")
+	}
+
+	return &MiseToolProvider{
+		ExecEnv: execenv.ExecEnv{
+			InstallDir: installDir,
+
+			// https://mise.jdx.dev/configuration.html#environment-variables
+			ExtraEnvs: map[string]string{
+				"MISE_DATA_DIR": dataDir,
+
+				// Isolate this mise instance's "global" config from system-wide config
+				"MISE_CONFIG_DIR":         filepath.Join(dataDir),
+				"MISE_GLOBAL_CONFIG_FILE": filepath.Join(dataDir, "config.toml"),
+				"MISE_GLOBAL_CONFIG_ROOT": dataDir,
+			},
+		},
+	}, nil
 }
 
 func (m *MiseToolProvider) ID() string {
@@ -14,7 +48,11 @@ func (m *MiseToolProvider) ID() string {
 }
 
 func (m *MiseToolProvider) Bootstrap() error {
-	// TODO
+	err := installReleaseBinary(miseVersion, m.ExecEnv.InstallDir)
+	if err != nil {
+		return fmt.Errorf("bootstrap mise: %w", err)
+	}
+
 	return nil
 }
 
