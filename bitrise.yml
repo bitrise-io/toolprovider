@@ -49,3 +49,19 @@ workflows:
 
                 git tag -a "v0.0.0-$(git rev-parse --short HEAD)" -m "Snapshot release"
                 goreleaser release --clean
+  
+  integration-test-system-asdf:
+    steps:
+      - git-clone@8: {}
+      - script@1:
+          title: Run integration tests against system asdf
+          inputs:
+            - content: |
+                #!/bin/bash
+                set -ex
+
+                # Uninstall any preinstalled tool versions as they may interfere with the tests
+                rm -rf ~/.asdf/installs
+
+                export TOOLPROVIDER_TEST_USE_SYSTEM_ASDF=1
+                go test ./_integration_tests/asdf/... -v -timeout 360s

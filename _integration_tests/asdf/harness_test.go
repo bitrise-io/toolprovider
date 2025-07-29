@@ -39,6 +39,13 @@ type testEnv struct {
 
 // createTestEnv creates an isolated installation of a given asdf version for testing.
 func createTestEnv(t *testing.T, installRequest asdfInstallation) (testEnv, error) {
+	if os.Getenv("TOOLPROVIDER_TEST_USE_SYSTEM_ASDF") == "1" {
+		return testEnv{
+			envVars:   map[string]string{},
+			shellInit: "",
+		}, nil
+	}
+
 	homeDir := t.TempDir()
 	dataDir := t.TempDir()
 	shimsDir := filepath.Join(dataDir, "shims")
