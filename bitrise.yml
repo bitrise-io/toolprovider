@@ -8,8 +8,8 @@ meta:
   experimental:
     tools:
       golang: 1.22:installed
-    # tool_config:
-      # provider: mise
+    tool_config:
+      provider: mise
 
 workflows:
   release-snapshot:
